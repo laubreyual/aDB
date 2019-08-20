@@ -6,19 +6,29 @@ WS : [ \t\r\n] -> skip;
 
 DOT : '.';
 
-EQUAL : '=';
-
 COMMA : ',';
 
 NUMBER : [0-9]*.?[0-9]+;
 
 STRING :  .*?  ;
 
-LOGICAL : 'AND' | 'OR';
+SELECT : [Ss][Ee][Ll][Ee][Cc][Tt];
 
-SELECT : 'SELECT' | 'select';
+FROM : [Ff][Rr][Oo][Mm];
 
-FROM : 'FROM' | 'from';
+BETWEEN : [Bb][Ee][Tt][Ww][Ee][Ee][Nn];
+
+LIKE : [Ll][Ii][Kk][Ee];
+
+IN : [Ii][Nn];
+
+RELATIONAL : '=' | '>' | '<' | '>=' | '<=' | '!=' | BETWEEN | LIKE | IN ;
+
+AND : [Aa][Nn][Dd];
+
+OR : [Oo][Rr];
+
+LOGICAL : AND | OR;
 
 IDENTIFIER : [a-zA-Z_]+[a-zA-Z_0-9]* ;
 
@@ -28,13 +38,13 @@ column_name : IDENTIFIER (COMMA IDENTIFIER)*;
 
 table : IDENTIFIER (COMMA IDENTIFIER)*;
 
-WHERE_K : 'WHERE' | 'where';
+WHERE_K : [Ww][Hh][Ee][Rr][Ee];
 
 where : WHERE_K condition;
 
 DOT_IDENTIFIER : DOT IDENTIFIER;
 
-S_CONDITION : IDENTIFIER DOT_IDENTIFIER? EQUAL (STRING | NUMBER);
+S_CONDITION : IDENTIFIER DOT_IDENTIFIER? RELATIONAL (STRING | NUMBER);
 
 condition : S_CONDITION (LOGICAL S_CONDITION)*;
 
