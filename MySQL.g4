@@ -1,8 +1,8 @@
 grammar MySQL;
 
-s : SELECT WS+ COLUMN WS+ FROM WS+ TABLE WS+ WHERE?;
+s : SELECT column FROM table where? ';';
 
-WS : [ \t\r\n];
+WS : [ \t\r\n] -> skip;
 
 DOT : '.';
 
@@ -14,24 +14,27 @@ NUMBER : [0-9]*.?[0-9]+;
 
 STRING :  .*?  ;
 
+LOGICAL : 'AND' | 'OR';
+
 SELECT : 'SELECT' | 'select';
 
 FROM : 'FROM' | 'from';
 
 IDENTIFIER : [a-zA-Z_]+[a-zA-Z_0-9]* ;
 
-COLUMN : '*' | COLUMN_NAME;
+column : '*' | column_name;
 
-COLUMN_NAME : (WS* IDENTIFIER WS* COMMA)* | IDENTIFIER;
+column_name : IDENTIFIER (COMMA IDENTIFIER)*;
 
-TABLE : IDENTIFIER | WS* IDENTIFIER WS* COMMA;
+table : IDENTIFIER (COMMA IDENTIFIER)*;
 
 WHERE_K : 'WHERE' | 'where';
 
-WHERE : WHERE_K WS+ CONDITION;
+where : WHERE_K condition;
+
+DOT_IDENTIFIER : DOT IDENTIFIER;
 
 S_CONDITION : IDENTIFIER DOT_IDENTIFIER? EQUAL (STRING | NUMBER);
 
-CONDITION : (WS* S_CONDITION WS* COMMA)* | S_CONDITION;
+condition : S_CONDITION (LOGICAL S_CONDITION)*;
 
-DOT_IDENTIFIER : DOT IDENTIFIER;
