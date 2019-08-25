@@ -1,6 +1,6 @@
 grammar MySQL;
 
-s : SELECT column FROM table where? ';';
+s : SELECT column FROM table where? ';' | DELETE FROM table where? ';';
 
 WS : [ \t\r\n] -> skip;
 
@@ -11,6 +11,8 @@ COMMA : ',';
 NUMBER : [0-9]*.?[0-9]+;
 
 STRING :  .*?  ;
+
+DELETE : [Dd][Ee][Ll][Ee][Tt][Ee];
 
 SELECT : [Ss][Ee][Ll][Ee][Cc][Tt];
 
