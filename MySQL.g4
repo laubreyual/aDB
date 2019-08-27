@@ -1,6 +1,6 @@
 grammar MySQL;
 
-s : SELECT column FROM table where? ';' | DELETE FROM table where? ';';
+s : SELECT column FROM table (where)+ ';'  | DELETE FROM table where? ';';
 
 WS : [ \t\r\n] -> skip;
 
@@ -8,7 +8,7 @@ DOT : '.';
 
 COMMA : ',';
 
-NUMBER : [0-9]*.?[0-9]+;
+NUMBER : [0-9]*(.)?[0-9]+;
 
 STRING :  .*?  ;
 
@@ -42,11 +42,11 @@ table : IDENTIFIER (COMMA IDENTIFIER)*;
 
 WHERE_K : [Ww][Hh][Ee][Rr][Ee];
 
-where : WHERE_K condition;
+where : WHERE_K CONDITION;
 
 DOT_IDENTIFIER : DOT IDENTIFIER;
 
-S_CONDITION : IDENTIFIER DOT_IDENTIFIER? RELATIONAL (STRING | NUMBER);
+S_CONDITION : IDENTIFIER (DOT_IDENTIFIER)? RELATIONAL (STRING | NUMBER);
 
-condition : S_CONDITION (LOGICAL S_CONDITION)*;
+CONDITION : S_CONDITION (LOGICAL S_CONDITION)*;
 
