@@ -1,20 +1,30 @@
 grammar MySQL;
 
-s : SELECT column FROM table (where)+ ';'  | DELETE FROM table where? ';';
+s : SELECT (WS)+ column (WS)+ FROM (WS)+ table (WS)* (where_c)? ';'  | DELETE (WS)+ FROM (WS)+ table (WS)* (where_c)? ';' | INSERT (WS)+ table ((WS)* PL column_name PR)? (WS)+ VALUES (WS)* PL values_c PR ';' ;
 
-WS : [ \t\r\n] -> skip;
+WS : [ \t\r\n];
 
 DOT : '.';
 
 COMMA : ',';
 
+PL : '(';
+
+PR : ')';
+
 NUMBER : [0-9]*(.)?[0-9]+;
 
 STRING :  .*?  ;
 
+INSERT : [Ii][Nn][Ss][Ee][Rr][Tt] (WS)+ [Ii][Nn][Tt][Oo];
+
+VALUES : [Vv][Aa][Ll][Uu][Ee][Ss];
+
 DELETE : [Dd][Ee][Ll][Ee][Tt][Ee];
 
 SELECT : [Ss][Ee][Ll][Ee][Cc][Tt];
+
+WHERE : [Ww][Hh][Ee][Rr][Ee];
 
 FROM : [Ff][Rr][Oo][Mm];
 
@@ -36,17 +46,16 @@ IDENTIFIER : [a-zA-Z_]+[a-zA-Z_0-9]* ;
 
 column : '*' | column_name;
 
-column_name : IDENTIFIER (COMMA IDENTIFIER)*;
+column_name : (WS)* IDENTIFIER (WS)* (COMMA (WS)* IDENTIFIER)*;
 
 table : IDENTIFIER (COMMA IDENTIFIER)*;
 
-WHERE_K : [Ww][Hh][Ee][Rr][Ee];
-
-where : WHERE_K CONDITION;
+where_c :  WHERE (WS)+ condition;
 
 DOT_IDENTIFIER : DOT IDENTIFIER;
 
-S_CONDITION : IDENTIFIER (DOT_IDENTIFIER)? RELATIONAL (STRING | NUMBER);
+S_CONDITION : IDENTIFIER (DOT_IDENTIFIER)? (WS)* RELATIONAL (WS)* (NUMBER | STRING);
 
-CONDITION : S_CONDITION (LOGICAL S_CONDITION)*;
+condition : S_CONDITION ((WS)+ LOGICAL (WS)+ S_CONDITION)*;
 
+values_c : (WS)* (NUMBER | STRING) (WS)* (COMMA (WS)* (NUMBER | STRING))*;
