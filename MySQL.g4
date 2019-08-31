@@ -1,6 +1,8 @@
 grammar MySQL;
 
-s : SELECT (WS)+ column (WS)+ FROM (WS)+ table (WS)* (where_c)? ';'  | DELETE (WS)+ FROM (WS)+ table (WS)* (where_c)? ';' | INSERT (WS)+ table ((WS)* PL column_name PR)? (WS)+ VALUES (WS)* PL values_c PR ';' ;
+s : SELECT (WS)+ column (WS)+ FROM (WS)+ table (WS)* (where_c)? ';'  
+	| DELETE (WS)+ FROM (WS)+ table (WS)* (where_c)? ';' 
+	| INSERT (WS)+ table ((WS)* PL column_name PR)? (WS)+ VALUES (WS)* PL values_c PR ';' ;
 
 WS : [ \t\r\n];
 
@@ -12,9 +14,9 @@ PL : '(';
 
 PR : ')';
 
-NUMBER : [0-9]*(.)?[0-9]+;
+NUMBER : [0-9]*[.]?[0-9]+;
 
-STRING :  .*?  ;
+STRING :  ['] [A-Za-z0-9]* ['] | ["] [A-Za-z0-9]* ["]  ;
 
 INSERT : [Ii][Nn][Ss][Ee][Rr][Tt] (WS)+ [Ii][Nn][Tt][Oo];
 
@@ -58,4 +60,4 @@ S_CONDITION : IDENTIFIER (DOT_IDENTIFIER)? (WS)* RELATIONAL (WS)* (NUMBER | STRI
 
 condition : S_CONDITION ((WS)+ LOGICAL (WS)+ S_CONDITION)*;
 
-values_c : (WS)* (NUMBER | STRING) (WS)* (COMMA (WS)* (NUMBER | STRING))*;
+values_c : (WS)*(NUMBER | STRING)(WS)* (COMMA (WS)* (NUMBER | STRING))*;
