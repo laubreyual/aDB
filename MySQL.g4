@@ -2,7 +2,8 @@ grammar MySQL;
 
 s : SELECT (WS)+ column (WS)+ FROM (WS)+ table (WS)* (where_c)? ';'  
 	| DELETE (WS)+ FROM (WS)+ table (WS)* (where_c)? ';' 
-	| INSERT (WS)+ table ((WS)* PL column_name PR)? (WS)+ VALUES (WS)* PL values_c PR ';' ;
+	| INSERT (WS)+ table ((WS)* PL column_name PR)? (WS)+ VALUES (WS)* PL values_c PR ';' 
+	| CREATE (WS)+ table (WS)* PL attributes PR (WS)*';' ;
 
 WS : [ \t\r\n];
 
@@ -26,6 +27,8 @@ DELETE : [Dd][Ee][Ll][Ee][Tt][Ee];
 
 SELECT : [Ss][Ee][Ll][Ee][Cc][Tt];
 
+CREATE : [Cc][Rr][Ee][Aa][Tt][Ee] (WS)+ [Tt][Aa][Bb][Ll][Ee];
+
 WHERE : [Ww][Hh][Ee][Rr][Ee];
 
 FROM : [Ff][Rr][Oo][Mm];
@@ -35,6 +38,14 @@ BETWEEN : [Bb][Ee][Tt][Ww][Ee][Ee][Nn];
 LIKE : [Ll][Ii][Kk][Ee];
 
 IN : [Ii][Nn];
+
+VARCHAR : [Vv][Aa][Rr][Cc][Hh][Aa][Rr] (WS)* PL (WS)* NUMBER (WS)* PR;
+
+INT : [Ii][Nn][Tt] (WS)* PL (WS)* NUMBER (WS)* PR;
+
+PRIMARY : [Pp][Rr][Ii][Mm][Aa][Rr][Yy][_][Kk][Ee][Yy] ;
+
+NOTNULL : [Nn][Oo][Tt] (WS)+ [Nn][Uu][Ll][Ll];
 
 RELATIONAL : '=' | '>' | '<' | '>=' | '<=' | '!=' | BETWEEN | LIKE | IN ;
 
@@ -60,4 +71,12 @@ S_CONDITION : IDENTIFIER (DOT_IDENTIFIER)? (WS)* RELATIONAL (WS)* (NUMBER | STRI
 
 condition : S_CONDITION ((WS)+ LOGICAL (WS)+ S_CONDITION)*;
 
-values_c : (WS)*(NUMBER | STRING)(WS)* (COMMA (WS)* (NUMBER | STRING))*;
+values_c : (WS)* (NUMBER | STRING) (WS)* (COMMA (WS)* (NUMBER | STRING))*;
+
+OPTIONS : PRIMARY | NOTNULL ;
+
+VARTYPE : INT | VARCHAR ;
+
+ATTRIBUTE : IDENTIFIER (WS)+ VARTYPE ((WS)+ OPTIONS (WS)*)* ;
+
+attributes : (WS)* ATTRIBUTE ((WS)* COMMA (WS)* ATTRIBUTE)* ;
