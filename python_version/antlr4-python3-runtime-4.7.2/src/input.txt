@@ -1,0 +1,1 @@
+select a,b from emp where a>=10  and  b="hi" ;
