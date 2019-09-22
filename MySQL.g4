@@ -1,9 +1,15 @@
 grammar MySQL;
 
-s : SELECT (WS)+ column (WS)+ FROM (WS)+ table (WS)* (where_c)? ';'  
-	| DELETE (WS)+ FROM (WS)+ table (WS)* (where_c)? ';' 
-	| INSERT (WS)+ table ((WS)* PL column_name PR)? (WS)+ VALUES (WS)* PL values_c PR ';' 
-	| CREATE (WS)+ table (WS)* PL attributes PR (WS)*';' ;
+s : select_c | delete_c | insert_c | create_c ;
+
+select_c : SELECT (WS)+ column (WS)+ FROM (WS)+ table (WS)* (where_c)? (WS)* ';' ;
+
+delete_c : DELETE (WS)+ FROM (WS)+ table (WS)* (where_c)? (WS)* ';' ;
+
+insert_c : INSERT (WS)+ table ((WS)* PL column_name PR)? (WS)+ VALUES (WS)* PL values_c PR ';' (WS)* ;
+
+create_c : CREATE (WS)+ table (WS)* PL attributes PR (WS)*';' ;
+
 
 WS : [ \t\r\n];
 
@@ -17,7 +23,9 @@ PR : ')';
 
 NUMBER : [0-9]*[.]?[0-9]+;
 
-STRING :  ['] [A-Za-z0-9]* ['] | ["] [A-Za-z0-9]* ["]  ;
+DATE : ['][0-9][0-9][0-9][0-9]'-'[0-9][0-9]'-'[0-9][0-9]['] | ["][0-9][0-9][0-9][0-9]'-'[0-9][0-9]'-'[0-9][0-9]["];
+
+STRING :  ['] (.)*? ['] | ["] (.)*? ["]  ;
 
 INSERT : [Ii][Nn][Ss][Ee][Rr][Tt] (WS)+ [Ii][Nn][Tt][Oo];
 
@@ -47,29 +55,29 @@ PRIMARY : [Pp][Rr][Ii][Mm][Aa][Rr][Yy][_][Kk][Ee][Yy] ;
 
 NOTNULL : [Nn][Oo][Tt] (WS)+ [Nn][Uu][Ll][Ll];
 
-RELATIONAL : '=' | '>' | '<' | '>=' | '<=' | '!=' | BETWEEN | LIKE | IN ;
-
 AND : [Aa][Nn][Dd];
 
 OR : [Oo][Rr];
 
-LOGICAL : AND | OR;
+RELATIONAL : '=' | '>' | '<' | '>=' | '<=' | '!=' | BETWEEN | LIKE | IN ;
 
 IDENTIFIER : [a-zA-Z_]+[a-zA-Z_0-9]* ;
 
-column : '*' | column_name;
+logical : AND | OR ;
 
-column_name : (WS)* IDENTIFIER (WS)* (COMMA (WS)* IDENTIFIER)*;
+column : '*' | (WS)* column_name (WS)* (COMMA (WS)* column_name)*;
 
-table : IDENTIFIER (COMMA IDENTIFIER)*;
+column_name : IDENTIFIER (DOT_IDENTIFIER)?;
+
+table : IDENTIFIER (WS)* (COMMA (WS)* IDENTIFIER)*;
 
 where_c :  WHERE (WS)+ condition;
 
 DOT_IDENTIFIER : DOT IDENTIFIER;
 
-S_CONDITION : IDENTIFIER (DOT_IDENTIFIER)? (WS)* RELATIONAL (WS)* (NUMBER | STRING);
+s_condition : IDENTIFIER (DOT_IDENTIFIER)? (WS)* RELATIONAL (WS)* (NUMBER | DATE | STRING);
 
-condition : S_CONDITION ((WS)+ LOGICAL (WS)+ S_CONDITION)*;
+condition : s_condition ((WS)+ logical (WS)+ s_condition)*;
 
 values_c : (WS)* (NUMBER | STRING) (WS)* (COMMA (WS)* (NUMBER | STRING))*;
 
