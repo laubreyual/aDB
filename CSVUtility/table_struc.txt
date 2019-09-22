@@ -1,0 +1,3 @@
+sample_table = {"id": {"type":"int"}, "fname": {"type":"varchar"}, "lname":{"type":"varchar"},"age":{"type":"int"}}
+sample_table1 = {"id":{"type":"int"}, "bday":{"type":"date"}, "address":{"type":"varchar"},"age":{"type":"int"}}
+sample_table2 = {"id":{"type":"int"}, "email_address":{"type":"varchar"}, "contact":{"type":"varchar"},"bday":{"type":"int"}}
