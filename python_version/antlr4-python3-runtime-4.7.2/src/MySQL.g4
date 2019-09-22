@@ -23,7 +23,9 @@ PR : ')';
 
 NUMBER : [0-9]*[.]?[0-9]+;
 
-STRING :  ['] [A-Za-z0-9]* ['] | ["] [A-Za-z0-9]* ["]  ;
+DATE : ['][0-9][0-9][0-9][0-9]'-'[0-9][0-9]'-'[0-9][0-9]['] | ["][0-9][0-9][0-9][0-9]'-'[0-9][0-9]'-'[0-9][0-9]["];
+
+STRING :  ['] (.)*? ['] | ["] (.)*? ["]  ;
 
 INSERT : [Ii][Nn][Ss][Ee][Rr][Tt] (WS)+ [Ii][Nn][Tt][Oo];
 
@@ -63,17 +65,17 @@ IDENTIFIER : [a-zA-Z_]+[a-zA-Z_0-9]* ;
 
 logical : AND | OR ;
 
-column : '*' | column_name;
+column : '*' | (WS)* column_name (WS)* (COMMA (WS)* column_name)*;
 
-column_name : (WS)* IDENTIFIER (WS)* (COMMA (WS)* IDENTIFIER)*;
+column_name : IDENTIFIER (DOT_IDENTIFIER)?;
 
-table : IDENTIFIER (COMMA IDENTIFIER)*;
+table : IDENTIFIER (WS)* (COMMA (WS)* IDENTIFIER)*;
 
 where_c :  WHERE (WS)+ condition;
 
 DOT_IDENTIFIER : DOT IDENTIFIER;
 
-s_condition : IDENTIFIER (DOT_IDENTIFIER)? (WS)* RELATIONAL (WS)* (NUMBER | STRING);
+s_condition : IDENTIFIER (DOT_IDENTIFIER)? (WS)* RELATIONAL (WS)* (NUMBER | DATE | STRING);
 
 condition : s_condition ((WS)+ logical (WS)+ s_condition)*;
 
