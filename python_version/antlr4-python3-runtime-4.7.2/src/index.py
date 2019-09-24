@@ -5,9 +5,13 @@ from MySQLParser import MySQLParser
 from MySQLListener import MySQLListener
 from BTrees.OOBTree import OOBTree
 from DatabasePY import *
+from antlr4.error.ErrorListener import ErrorListener
 
-
-
+class SQLErrorListener(ErrorListener):
+	def __init__(self):
+		super(SQLErrorListener, self).__init__()
+	def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
+		raise Exception("Syntax error")
 
 class InterpreterListener(MySQLListener):
 	command = None
@@ -171,6 +175,7 @@ def main(argv):
 	lexer = MySQLLexer(input_stream)
 	stream = CommonTokenStream(lexer)
 	parser = MySQLParser(stream)
+	parser.addErrorListener(SQLErrorListener())
 	tree = parser.s()
 	interpreter = InterpreterListener()
 	walker = ParseTreeWalker()
