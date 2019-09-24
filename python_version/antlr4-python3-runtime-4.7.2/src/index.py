@@ -254,6 +254,20 @@ def main(argv):
 			# pass
 			printData(database, table_schema)
 
+
+		#error checking for insert
+
+		#execution of insert
+
+		#error checking for delete
+
+		#execution of delete
+
+		#error checking for create
+
+		#execution of create
+
+
 	print("Command:", InterpreterListener.command)
 	print("Columns:", InterpreterListener.columns)
 	print("Tables:", InterpreterListener.tables)
