@@ -8,7 +8,7 @@ delete_c : DELETE (WS)+ FROM (WS)+ table (WS)* (where_c)? (WS)* ';' ;
 
 insert_c : INSERT (WS)+ table ((WS)* PL column_name PR)? (WS)+ VALUES (WS)* PL values_c PR ';' (WS)* ;
 
-create_c : CREATE (WS)+ table (WS)* PL attributes PR (WS)*';' ;
+create_c : CREATE (WS)+ table (WS)* PL (WS)* attributes (WS)* PR (WS)*';' ;
 
 
 WS : [ \t\r\n];
@@ -75,7 +75,7 @@ where_c :  WHERE (WS)+ condition;
 
 DOT_IDENTIFIER : DOT IDENTIFIER;
 
-s_condition : IDENTIFIER (DOT_IDENTIFIER)? (WS)* RELATIONAL (WS)* (NUMBER | DATE | STRING);
+s_condition : IDENTIFIER (DOT_IDENTIFIER)? (WS)* RELATIONAL (WS)* (IDENTIFIER| NUMBER | DATE | STRING);
 
 condition : s_condition ((WS)+ logical (WS)+ s_condition)*;
 
@@ -85,6 +85,6 @@ OPTIONS : PRIMARY | NOTNULL ;
 
 VARTYPE : INT | VARCHAR ;
 
-ATTRIBUTE : IDENTIFIER (WS)+ VARTYPE ((WS)+ OPTIONS (WS)*)* ;
+attribute : IDENTIFIER (WS)+ (INT | VARCHAR) ((WS)+ OPTIONS (WS)*)* ;
 
-attributes : (WS)* ATTRIBUTE ((WS)* COMMA (WS)* ATTRIBUTE)* ;
+attributes : (WS)* attribute ((WS)* COMMA (WS)* attribute)* ;

@@ -44,13 +44,16 @@ class InterpreterListener(MySQLListener):
 				break
 			InterpreterListener.tables.append(str(name))
 	def exitS_condition(self, ctx:MySQLParser.S_conditionContext):
-		variable = ctx.IDENTIFIER()
+		variable = ctx.IDENTIFIER(0)
 		dot_name = ctx.DOT_IDENTIFIER()
 		op = ctx.RELATIONAL()
 		if dot_name != None:
 			variable = str(variable) + str(dot_name)
 
-		if ctx.NUMBER() != None:
+		if ctx.IDENTIFIER(1) != None:
+			value = str(ctx.IDENTIFIER(1))
+			data_type = "two_var"
+		elif ctx.NUMBER() != None:
 			value = float(str(ctx.NUMBER()))
 			data_type = "number"
 		elif ctx.STRING() != None:
@@ -98,7 +101,26 @@ def printDataRecursive(database, l, table_column, conditions, logicals, isPrintA
 			
 			newCondition = False
 			for condition in conditions:
-				if condition[0] == table[0]:
+				if condition[5] == "two_var":
+					if condition[0] == table[0]:
+						#get the value of the attribute
+						if condition[1] == 0: #key attribute
+							condition[6] = key
+						else:
+							condition[6] = database[table[0]][key][condition[1]-1]
+					if condition[3] == table[0]:
+						#get the value of the attribute
+						if condition[4] == 0: #key attribute
+							condition[7] = key
+						else:
+							condition[7] = database[table[0]][key][condition[4]-1]
+					if condition[6] != None and condition[7] != None:
+						if len(logicals)==0 or (len(logicals)!=0 and logicals[0] == 'AND'):
+							isIncluded_new = isIncluded and evaluateCondition(condition[6], condition[7], condition[2])
+						elif logicals[0] == 'OR':
+							isIncluded_new = isIncluded or evaluateCondition(condition[6], condition[7], condition[2])
+						newCondition = True
+				elif condition[0] == table[0]:
 					if len(logicals)==0 or (len(logicals)!=0 and logicals[0] == 'AND'):
 						if condition[1] == 0: #primary key column
 							isIncluded_new = isIncluded and evaluateCondition(key, condition[3], condition[2])
@@ -150,6 +172,11 @@ def printData(database, table_schema):
 		table_name = temp[0]
 		column_index = table_schema[table_name][0].index((temp[1]))
 		conditions[index] = [table_name, column_index]+ conditions[index][1:]
+		if conditions[index][4] == "two_var":
+			temp = conditions[index][3].split(".")
+			table_name = temp[0]
+			column_index = table_schema[table_name][0].index((temp[1]))
+			conditions[index] = conditions[index][:3] + [table_name, column_index] + conditions[index][4:]
 	#print(conditions)
 	#assuming two conditions only with one logical
 	if len(logicals)==0 or (len(logicals)!=0 and logicals[0] == 'AND'):
@@ -160,10 +187,11 @@ def printData(database, table_schema):
 
 def main(argv):
 	database = {}
-	list_tables = ["sample", "sample2"]
+	list_tables = ["sample", "sample2", "person"]
 	#index 0 is always the primary key
 	table_schema = {"sample":[["a", "b", "c"],["number", "string", "string"]],
-					"sample2":[["d", "e", "f"],["number", "string", "string"]]}
+					"sample2":[["d", "e", "f"],["number", "string", "string"]],
+					"person":[["id", "name", "birthday"], ["number", "string", "date"]]}
 
 	for table in list_tables:
 		loadDatabase(database, table)
@@ -214,7 +242,7 @@ def main(argv):
 			j = InterpreterListener.conditions[index]
 			# j[0] = condition variable
 			column_found = False
-			if "." not in j[0]:
+			if "." not in j[0] and j[3] != "two_var":
 				for i in InterpreterListener.tables:
 					if j[0] in table_schema[i][0]:
 						column_found = True
@@ -229,7 +257,7 @@ def main(argv):
 								error = True
 						InterpreterListener.conditions[index][0] = i + "." + j[0]
 						break
-			else:
+			elif j[3] != "two_var":
 				column_name = j[0][j[0].find(".")+1:]
 				table_name = j[0][0:j[0].find(".")]
 				
@@ -242,8 +270,36 @@ def main(argv):
 					else:
 						print("Error: wrong data type in the where clause")
 						error = True
+			#case of two variables in the same condition
+			else:
+				for i in InterpreterListener.tables:
+					#for the first variable
+					if j[0] in table_schema[i][0] and "." not in j[0]:
+						InterpreterListener.conditions[index][0] = i + "." + j[0]
+					#for the second variable
+					if j[2] in table_schema[i][0] and "." not in j[2]:
+						InterpreterListener.conditions[index][2] = i + "." + j[2]
+					if "." in j[0] and "." in j[2]:
+						if j[0][j[0].find(".")+1:] in table_schema[j[0][0:j[0].find(".")]][0] and j[2][j[2].find(".")+1:] in table_schema[j[2][0:j[2].find(".")]][0]:
+							column_found = True
+						break
+				if column_found:
+					j.append(None)
+					j.append(None)
+					tb_name1 = j[0][:j[0].find(".")]
+					tb_name2 = j[2][:j[2].find(".")]
+					col_name1 = j[0][j[0].find(".")+1:]
+					col_name2 = j[2][j[2].find(".")+1:]
+					col_index_1 = table_schema[tb_name1][0].index(col_name1)
+					col_index_2 = table_schema[tb_name2][0].index(col_name2)
+					if table_schema[tb_name1][1][col_index_1] != table_schema[tb_name2][1][col_index_2]:
+						print("Error: wrong data type in the where clause")
+						error = True
+
+
 			if not column_found:
-				print("Error: column", j[0], "in the where clause does not exist")
+				print("Error: Some column/s in the where clause does/do not exist")
+				break
 				error = True
 		#sort conditions
 		# for index in range(0)
@@ -251,7 +307,7 @@ def main(argv):
 
 		#execution of the SQL Statement
 		if InterpreterListener.command == 'select' and not error:
-			# pass
+			pass
 			printData(database, table_schema)
 
 

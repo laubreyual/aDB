@@ -1,1 +1,1 @@
-select * from sample, sample2 where a>5 or f="hello1" ;
+select * from person,sample, sample2 where a=id;

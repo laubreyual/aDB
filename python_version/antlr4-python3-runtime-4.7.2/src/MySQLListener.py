@@ -125,6 +125,15 @@ class MySQLListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MySQLParser#attribute.
+    def enterAttribute(self, ctx:MySQLParser.AttributeContext):
+        pass
+
+    # Exit a parse tree produced by MySQLParser#attribute.
+    def exitAttribute(self, ctx:MySQLParser.AttributeContext):
+        pass
+
+
     # Enter a parse tree produced by MySQLParser#attributes.
     def enterAttributes(self, ctx:MySQLParser.AttributesContext):
         pass
