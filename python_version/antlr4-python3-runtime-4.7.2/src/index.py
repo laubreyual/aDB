@@ -94,8 +94,9 @@ def printDataRecursive(database, headers, tabulated, l, table_column, conditions
 	#print("Table column", table_column)
 	if len(table_column)>0:
 		table = table_column[0]
-
+		key_index = -1
 		for key in database[table[0]]:
+			key_index += 1
 			if isPrintAll:
 				to_print = [key] + database[table[0]][key]
 			elif 0 in table[1]: #key is included
@@ -103,7 +104,7 @@ def printDataRecursive(database, headers, tabulated, l, table_column, conditions
 			else:
 				to_print = [database[table[0]][key][index-1] for index in table[1]]
 			
-			newCondition = False
+			isIncluded_new = isIncluded
 			for condition in conditions:
 				if len(condition)>5 and condition[5] == "two_var":
 					if condition[0] == table[0]:
@@ -120,25 +121,25 @@ def printDataRecursive(database, headers, tabulated, l, table_column, conditions
 							condition[7] = database[table[0]][key][condition[4]-1]
 					if condition[6] != None and condition[7] != None:
 						if len(logicals)==0 or (len(logicals)!=0 and logicals[0] == 'AND'):
-							isIncluded_new = isIncluded and evaluateCondition(condition[6], condition[7], condition[2])
+							isIncluded_new = isIncluded_new and evaluateCondition(condition[6], condition[7], condition[2])
 						elif logicals[0] == 'OR':
-							isIncluded_new = isIncluded or evaluateCondition(condition[6], condition[7], condition[2])
-						newCondition = True
+							isIncluded_new = isIncluded_new or evaluateCondition(condition[6], condition[7], condition[2])
+						if key_index == len(database[table[0]])-1:
+							condition[6] = condition[7] = None
 				elif condition[0] == table[0]:
 					if len(logicals)==0 or (len(logicals)!=0 and logicals[0] == 'AND'):
 						if condition[1] == 0: #primary key column
-							isIncluded_new = isIncluded and evaluateCondition(key, condition[3], condition[2])
+							isIncluded_new = isIncluded_new and evaluateCondition(key, condition[3], condition[2])
 						else:
-							isIncluded_new = isIncluded and evaluateCondition(database[table[0]][key][condition[1]-1], condition[3], condition[2])
+							isIncluded_new = isIncluded_new and evaluateCondition(database[table[0]][key][condition[1]-1], condition[3], condition[2])
 					elif logicals[0] == 'OR':
 						if condition[1] == 0: #primary key column
-							isIncluded_new = isIncluded or evaluateCondition(key, condition[3], condition[2])
+							isIncluded_new = isIncluded_new or evaluateCondition(key, condition[3], condition[2])
 						else:
-							isIncluded_new = isIncluded or evaluateCondition(database[table[0]][key][condition[1]-1], condition[3], condition[2])
-					newCondition = True
-			if not newCondition:
-				isIncluded_new = isIncluded
-			printDataRecursive(database, headers, tabulated, l+to_print, table_column[1:], conditions, logicals, isPrintAll, isIncluded_new)
+							isIncluded_new = isIncluded_new or evaluateCondition(database[table[0]][key][condition[1]-1], condition[3], condition[2])
+			
+
+			printDataRecursive(database, headers, tabulated, l+to_print, table_column[1:], conditions[:], logicals, isPrintAll, isIncluded_new)
 	elif isIncluded:
 		tabulated.append(l)
 		global row_count

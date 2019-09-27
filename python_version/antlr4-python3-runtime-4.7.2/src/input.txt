@@ -1,1 +1,1 @@
-select * from person,sample, sample2 where a=id;
+select * from sample, person where a<id and id >2;
