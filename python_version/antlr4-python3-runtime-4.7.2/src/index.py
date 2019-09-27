@@ -7,6 +7,8 @@ from BTrees.OOBTree import OOBTree
 from DatabasePY import *
 from antlr4.error.ErrorListener import ErrorListener
 
+from SQLError import *
+
 class SQLErrorListener(ErrorListener):
 	def __init__(self):
 		super(SQLErrorListener, self).__init__()
@@ -185,59 +187,32 @@ def printData(database, table_schema):
 		isIncluded = False
 	printDataRecursive(database, [], table_column, conditions, logicals, not len(columns)>0, isIncluded)
 
-def main(argv):
-	database = {}
-	list_tables = ["sample", "sample2", "person"]
-	#index 0 is always the primary key
-	table_schema = {"sample":[["a", "b", "c"],["number", "string", "string"]],
-					"sample2":[["d", "e", "f"],["number", "string", "string"]],
-					"person":[["id", "name", "birthday"], ["number", "string", "date"]]}
 
-	for table in list_tables:
-		loadDatabase(database, table)
+def checkTables(db_tables):
+	for table in InterpreterListener.tables:
+		if table not in db_tables:
+			raise TableNotFoundError(table)
 
-
-
-	input_stream = FileStream(argv[1])
-	#input_stream = InputStream(input("Enter sql command: "))
-	lexer = MySQLLexer(input_stream)
-	stream = CommonTokenStream(lexer)
-	parser = MySQLParser(stream)
-	parser.addErrorListener(SQLErrorListener())
-	tree = parser.s()
-	interpreter = InterpreterListener()
-	walker = ParseTreeWalker()
-	walker.walk(interpreter, tree)
-	
-
-	if InterpreterListener.command=="select":
-		
-		#error checking
-		error = False
-
-		#error checking in tables
-		for i in InterpreterListener.tables:
-			if i not in list_tables:
-				print("Error: table", i, "does not exist")
-				error = True
-				break
-		#error checking in columns
-		for index in range(0, len(InterpreterListener.columns)):
-			j = InterpreterListener.columns[index]
-			column_found = False
-			if "." not in j:
-				for i in InterpreterListener.tables:
-					if j in table_schema[i][0]:
-						column_found = True
-						InterpreterListener.columns[index] = i + "." + j
-						break
-			else:
-				if j[j.find(".")+1:] in table_schema[j[0:j.find(".")]][0]:
+def checkColumns(table_schema):
+	for index in range(0, len(InterpreterListener.columns)):
+		column = InterpreterListener.columns[index]
+		column_found = False
+		if "." not in column:
+			for table in InterpreterListener.tables:
+				if column in table_schema[table][0]:
 					column_found = True
-			if not column_found:
-				print("Error: column", j, "does not exist")
-				error = True
-		#error checking in conditions
+					InterpreterListener.columns[index] = table + "." + column
+					break
+		else:
+			column_name = column.split(".")[1]
+			table = column.split(".")[0]
+			if column_name in table_schema[table][0]:
+				column_found = True
+
+		if not column_found:
+			raise ColumnNotFoundError(column, table)
+
+def checkConditions(table_schema):
 		for index in range(0, len(InterpreterListener.conditions)):
 			j = InterpreterListener.conditions[index]
 			# j[0] = condition variable
@@ -253,14 +228,13 @@ def main(argv):
 							if j[3] == "date" and data_type == "string":
 								InterpreterListener.conditions[index][3] = "string"
 							else:
-								print("Error: wrong data type in the where clause")
-								error = True
+								raise DataTypeNotMatchError(j[0], data_type, j[2])
 						InterpreterListener.conditions[index][0] = i + "." + j[0]
 						break
 			elif j[3] != "two_var":
 				column_name = j[0][j[0].find(".")+1:]
 				table_name = j[0][0:j[0].find(".")]
-				
+
 				if column_name in table_schema[table_name][0]:
 					column_found = True
 				data_type = table_schema[table_name][1][table_schema[table_name][0].index(column_name)]
@@ -268,8 +242,8 @@ def main(argv):
 					if j[3] == "date" and data_type == "string":
 						InterpreterListener.conditions[index][3] = "string"
 					else:
-						print("Error: wrong data type in the where clause")
-						error = True
+						raise DataTypeNotMatchError(j[0], data_type, j[2])
+
 			#case of two variables in the same condition
 			else:
 				for i in InterpreterListener.tables:
@@ -293,41 +267,50 @@ def main(argv):
 					col_index_1 = table_schema[tb_name1][0].index(col_name1)
 					col_index_2 = table_schema[tb_name2][0].index(col_name2)
 					if table_schema[tb_name1][1][col_index_1] != table_schema[tb_name2][1][col_index_2]:
-						print("Error: wrong data type in the where clause")
-						error = True
-
+						raise DataTypeNotMatchError(col_name1, table_schema[tb_name1][1][col_index_1], col_name2, table_schema[tb_name2][1][col_index_2])
 
 			if not column_found:
-				print("Error: Some column/s in the where clause does/do not exist")
-				break
-				error = True
-		#sort conditions
-		# for index in range(0)
-		#additional error checking here
+				raise ColumnNotFoundError('too many', 'too many')
 
-		#execution of the SQL Statement
-		if InterpreterListener.command == 'select' and not error:
-			pass
+def main(argv):
+	database = {}
+	list_tables = ["sample", "sample2"]
+	#index 0 is always the primary key
+	table_schema = {"sample":[["a", "b", "c"],["number", "string", "string"]],
+					"sample2":[["d", "e", "f"],["number", "string", "string"]]}
+
+	for table in list_tables:
+		loadDatabase(database, table)
+
+	input_stream = FileStream(argv[1])
+	#input_stream = InputStream(input("Enter sql command: "))
+	lexer = MySQLLexer(input_stream)
+	stream = CommonTokenStream(lexer)
+	parser = MySQLParser(stream)
+	parser.addErrorListener(SQLErrorListener())
+	tree = parser.s()
+	interpreter = InterpreterListener()
+	walker = ParseTreeWalker()
+	walker.walk(interpreter, tree)
+	
+
+	try:
+		if interpreter.command=="select":
+			checkTables(list_tables)
+			checkColumns(table_schema)
+			checkConditions(table_schema)
+
 			printData(database, table_schema)
+	except SQLError as e:
+		print(e.message)
+		print()
+	finally:
+		print("Command:", InterpreterListener.command)
+		print("Columns:", InterpreterListener.columns)
+		print("Tables:", InterpreterListener.tables)
+		print("Conditions:", InterpreterListener.conditions)
+		print("Logicals:", InterpreterListener.logicals)
 
 
-		#error checking for insert
-
-		#execution of insert
-
-		#error checking for delete
-
-		#execution of delete
-
-		#error checking for create
-
-		#execution of create
-
-
-	print("Command:", InterpreterListener.command)
-	print("Columns:", InterpreterListener.columns)
-	print("Tables:", InterpreterListener.tables)
-	print("Conditions:", InterpreterListener.conditions)
-	print("Logicals:", InterpreterListener.logicals)
 if __name__ == '__main__':
 	main(sys.argv)
