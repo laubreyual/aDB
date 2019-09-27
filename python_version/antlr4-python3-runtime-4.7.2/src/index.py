@@ -7,6 +7,8 @@ from BTrees.OOBTree import OOBTree
 from DatabasePY import *
 from antlr4.error.ErrorListener import ErrorListener
 
+from SQLError import *
+
 class SQLErrorListener(ErrorListener):
 	def __init__(self):
 		super(SQLErrorListener, self).__init__()
@@ -158,6 +160,65 @@ def printData(database, table_schema):
 		isIncluded = False
 	printDataRecursive(database, [], table_column, conditions, logicals, not len(columns)>0, isIncluded)
 
+
+def checkTables(db_tables):
+	for table in InterpreterListener.tables:
+		if table not in db_tables:
+			raise TableNotFoundError(table)
+
+def checkColumns(table_schema):
+	for index in range(0, len(InterpreterListener.columns)):
+		column = InterpreterListener.columns[index]
+		column_found = False
+		if "." not in column:
+			for table in InterpreterListener.tables:
+				if column in table_schema[table][0]:
+					column_found = True
+					InterpreterListener.columns[index] = table + "." + column
+					break
+		else:
+			column_name = column.split(".")[1]
+			table = column.split(".")[0]
+			if column_name in table_schema[table][0]:
+				column_found = True
+
+		if not column_found:
+			raise ColumnNotFoundError(column, table)
+
+def checkConditions(table_schema):
+		for index in range(0, len(InterpreterListener.conditions)):
+			j = InterpreterListener.conditions[index]
+			# j[0] = condition variable
+			column_found = False
+			if "." not in j[0]:
+				for i in InterpreterListener.tables:
+					if j[0] in table_schema[i][0]:
+						column_found = True
+						#check data type
+
+						data_type = table_schema[i][1][table_schema[i][0].index(j[0])]
+						if j[3] != data_type:
+							if j[3] == "date" and data_type == "string":
+								InterpreterListener.conditions[index][3] = "string"
+							else:
+								raise DataTypeNotMatchError(j[0], data_type, j[2])
+						InterpreterListener.conditions[index][0] = i + "." + j[0]
+						break
+			else:
+				column_name = j[0][j[0].find(".")+1:]
+				table_name = j[0][0:j[0].find(".")]
+
+				if column_name in table_schema[table_name][0]:
+					column_found = True
+				data_type = table_schema[table_name][1][table_schema[table_name][0].index(column_name)]
+				if data_type != j[3]:
+					if j[3] == "date" and data_type == "string":
+						InterpreterListener.conditions[index][3] = "string"
+					else:
+						raise DataTypeNotMatchError(j[0], data_type, j[2])
+			if not column_found:
+				raise ColumnNotFoundError(column_name, table_name)
+
 def main(argv):
 	database = {}
 	list_tables = ["sample", "sample2"]
@@ -185,74 +246,20 @@ def main(argv):
 	if InterpreterListener.command=="select":
 		
 		#error checking
-		error = False
 
 		#error checking in tables
-		for i in InterpreterListener.tables:
-			if i not in list_tables:
-				print("Error: table", i, "does not exist")
-				error = True
-				break
+		checkTables( list_tables)
 		#error checking in columns
-		for index in range(0, len(InterpreterListener.columns)):
-			j = InterpreterListener.columns[index]
-			column_found = False
-			if "." not in j:
-				for i in InterpreterListener.tables:
-					if j in table_schema[i][0]:
-						column_found = True
-						InterpreterListener.columns[index] = i + "." + j
-						break
-			else:
-				if j[j.find(".")+1:] in table_schema[j[0:j.find(".")]][0]:
-					column_found = True
-			if not column_found:
-				print("Error: column", j, "does not exist")
-				error = True
+		checkColumns(table_schema)
 		#error checking in conditions
-		for index in range(0, len(InterpreterListener.conditions)):
-			j = InterpreterListener.conditions[index]
-			# j[0] = condition variable
-			column_found = False
-			if "." not in j[0]:
-				for i in InterpreterListener.tables:
-					if j[0] in table_schema[i][0]:
-						column_found = True
-						#check data type
-
-						data_type = table_schema[i][1][table_schema[i][0].index(j[0])]
-						if j[3] != data_type:
-							if j[3] == "date" and data_type == "string":
-								InterpreterListener.conditions[index][3] = "string"
-							else:
-								print("Error: wrong data type in the where clause")
-								error = True
-						InterpreterListener.conditions[index][0] = i + "." + j[0]
-						break
-			else:
-				column_name = j[0][j[0].find(".")+1:]
-				table_name = j[0][0:j[0].find(".")]
-				
-				if column_name in table_schema[table_name][0]:
-					column_found = True
-				data_type = table_schema[table_name][1][table_schema[table_name][0].index(column_name)]
-				if data_type != j[3]:
-					if j[3] == "date" and data_type == "string":
-						InterpreterListener.conditions[index][3] = "string"
-					else:
-						print("Error: wrong data type in the where clause")
-						error = True
-			if not column_found:
-				print("Error: column", j[0], "in the where clause does not exist")
-				error = True
+		checkConditions(table_schema)
 		#sort conditions
 		# for index in range(0)
 		#additional error checking here
 
 		#execution of the SQL Statement
-		if InterpreterListener.command == 'select' and not error:
 			# pass
-			printData(database, table_schema)
+		printData(database, table_schema)
 
 
 		#error checking for insert
