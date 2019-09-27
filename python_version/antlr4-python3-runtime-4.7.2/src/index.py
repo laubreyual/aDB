@@ -6,8 +6,10 @@ from MySQLListener import MySQLListener
 from BTrees.OOBTree import OOBTree
 from DatabasePY import *
 from antlr4.error.ErrorListener import ErrorListener
-
+from tabulate import tabulate
 from SQLError import *
+
+row_count = 0
 
 class SQLErrorListener(ErrorListener):
 	def __init__(self):
@@ -88,7 +90,7 @@ def evaluateCondition(op1, op2, operator):
 	else:
 		return False
 
-def printDataRecursive(database, l, table_column, conditions, logicals, isPrintAll, isIncluded):
+def printDataRecursive(database, headers, tabulated, l, table_column, conditions, logicals, isPrintAll, isIncluded):
 	#print("Table column", table_column)
 	if len(table_column)>0:
 		table = table_column[0]
@@ -136,9 +138,11 @@ def printDataRecursive(database, l, table_column, conditions, logicals, isPrintA
 					newCondition = True
 			if not newCondition:
 				isIncluded_new = isIncluded
-			printDataRecursive(database, l+to_print, table_column[1:], conditions, logicals, isPrintAll, isIncluded_new)
+			printDataRecursive(database, headers, tabulated, l+to_print, table_column[1:], conditions, logicals, isPrintAll, isIncluded_new)
 	elif isIncluded:
-		print(l)
+		tabulated.append(l)
+		global row_count
+		row_count += 1
 
 
 def printData(database, table_schema):
@@ -149,12 +153,12 @@ def printData(database, table_schema):
 
 	#print the column header
 	if len(columns) > 0:
-		print(columns)
+		column_headers = columns
 	else: # the column specified was *
 		temp = []
 		for table in tables:
 			temp += table_schema[table][0]
-		print(temp)
+		column_headers = temp
 
 
 	#get the index of the columns to be printed and its table name
@@ -185,8 +189,14 @@ def printData(database, table_schema):
 		isIncluded = True
 	else:
 		isIncluded = False
-	printDataRecursive(database, [], table_column, conditions, logicals, not len(columns)>0, isIncluded)
 
+	tabulated = []
+	printDataRecursive(database, column_headers, tabulated, [], table_column, conditions, logicals, not len(columns)>0, isIncluded)
+	if len(tabulated)>0:
+		print(tabulate(tabulated, headers=column_headers, tablefmt='orgtbl'))
+		global row_count
+		print("Row Count:", row_count)
+		
 
 def checkTables(db_tables):
 	for table in InterpreterListener.tables:
