@@ -103,7 +103,7 @@ def printDataRecursive(database, l, table_column, conditions, logicals, isPrintA
 			
 			newCondition = False
 			for condition in conditions:
-				if condition[5] == "two_var":
+				if len(condition)>5 and condition[5] == "two_var":
 					if condition[0] == table[0]:
 						#get the value of the attribute
 						if condition[1] == 0: #key attribute
@@ -274,10 +274,11 @@ def checkConditions(table_schema):
 
 def main(argv):
 	database = {}
-	list_tables = ["sample", "sample2"]
+	list_tables = ["sample", "sample2", "person"]
 	#index 0 is always the primary key
 	table_schema = {"sample":[["a", "b", "c"],["number", "string", "string"]],
-					"sample2":[["d", "e", "f"],["number", "string", "string"]]}
+					"sample2":[["d", "e", "f"],["number", "string", "string"]],
+					"person":[["id", "name", "birthdate"],["number", "string", "date"]]}
 
 	for table in list_tables:
 		loadDatabase(database, table)
