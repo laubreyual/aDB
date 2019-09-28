@@ -33,6 +33,9 @@ class InterpreterListener(MySQLListener):
 		InterpreterListener.command = "insert"
 	def enterCreate_c(self, ctx:MySQLParser.Create_cContext):
 		InterpreterListener.command = "create"
+	def enterDescribe_c(self, ctx:MySQLParser.Describe_cContext):
+		InterpreterListener.command = "describe"
+		InterpreterListener.tables.append(str(ctx.IDENTIFIER()))
 	def exitColumn_name(self, ctx:MySQLParser.Column_nameContext):
 		name = ctx.IDENTIFIER()
 		dot_name = ctx.DOT_IDENTIFIER()
@@ -236,7 +239,7 @@ def checkConditions(table_schema):
 						column_found = True
 						#check data type
 
-						data_type = table_schema[i][1][table_schema[i][0].index(j[0])]
+						data_type = table_schema[i][1][table_schema[i][0].index(j[0])][0]
 						if j[3] != data_type:
 							if j[3] == "date" and data_type == "string":
 								InterpreterListener.conditions[index][3] = "string"
@@ -250,7 +253,7 @@ def checkConditions(table_schema):
 
 				if column_name in table_schema[table_name][0]:
 					column_found = True
-				data_type = table_schema[table_name][1][table_schema[table_name][0].index(column_name)]
+				data_type = table_schema[table_name][1][table_schema[table_name][0].index(column_name)][0]
 				if data_type != j[3]:
 					if j[3] == "date" and data_type == "string":
 						InterpreterListener.conditions[index][3] = "string"
@@ -285,13 +288,38 @@ def checkConditions(table_schema):
 			if not column_found:
 				raise ColumnNotFoundError('too many', 'too many')
 
+def describeTable(table, table_schema):
+	header = ["Field", "Type", "Key"]
+	columns = table_schema[table][0]
+	types = table_schema[table][1]
+	toPrint = []
+
+	for i in range(0, len(columns)):
+		key = ''
+		if i == 0:
+			key = 'PRI'
+		if types[i][0] == "string":
+			data_type = "varchar("+str(types[i][1])+")"
+		else:
+			data_type = types[i][0]
+		toPrint.append([columns[i], data_type, key])
+	print(tabulate(toPrint, headers=header, tablefmt='orgtbl'))
+
+
+
 def main(argv):
 	database = {}
-	list_tables = ["sample", "sample2", "person"]
+	list_tables = []
+	table_schema = {}
+	#list_tables = ["sample", "sample2", "person"]
 	#index 0 is always the primary key
-	table_schema = {"sample":[["a", "b", "c"],["number", "string", "string"]],
-					"sample2":[["d", "e", "f"],["number", "string", "string"]],
-					"person":[["id", "name", "birthdate"],["number", "string", "date"]]}
+	# table_schema = {"sample":[["a", "b", "c"],[("number", None), ("string", 50), ("string", 50)]],
+	# 				"sample2":[["d", "e", "f"],[("number", None), ("string", 50), ("string", 50)]],
+	# 				"person":[["id", "name", "birthdate"],[("number", None), ("string", 50), ("date", None)]]}
+
+	loadTables(list_tables, table_schema)
+	# print(list_tables)
+	# print(table_schema)
 
 	for table in list_tables:
 		loadDatabase(database, table)
@@ -315,6 +343,10 @@ def main(argv):
 			checkConditions(table_schema)
 
 			printData(database, table_schema)
+		elif interpreter.command=="describe":
+			checkTables(list_tables)
+
+			describeTable(InterpreterListener.tables[0], table_schema)
 	except SQLError as e:
 		print(e.message)
 		print()

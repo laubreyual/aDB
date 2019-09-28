@@ -26,4 +26,23 @@ def loadDatabase(database, table):
 			i += 1
 		t.update({fixed_data[0]:fixed_data[1:]})
 	database[table] = t
+	file.close()
 
+def loadTables(list_tables, table_schema):
+	file = open("database_files/table_schema", "r")
+
+	for line in file:
+		data = line[:-1].split(";")
+		list_tables.append(data[0])
+		columns = []
+		data_types =[]
+		i = 1
+		while i < len(data):
+			columns.append(data[i])
+			if data[i+2] == "None":
+				data_types.append((data[i+1],None))
+			else:
+				data_types.append((data[i+1],int(data[i+2])))
+			i+=3
+		table_schema[data[0]] = [columns, data_types]
+	file.close()

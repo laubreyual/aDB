@@ -143,3 +143,12 @@ class MySQLListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MySQLParser#describe_c.
+    def enterDescribe_c(self, ctx:MySQLParser.Describe_cContext):
+        pass
+
+    # Exit a parse tree produced by MySQLParser#describe_c.
+    def exitDescribe_c(self, ctx:MySQLParser.Describe_cContext):
+        pass
+
+

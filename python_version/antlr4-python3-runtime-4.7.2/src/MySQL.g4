@@ -1,6 +1,6 @@
 grammar MySQL;
 
-s : select_c | delete_c | insert_c | create_c ;
+s : select_c | delete_c | insert_c | create_c | describe_c;
 
 select_c : SELECT (WS)+ column (WS)+ FROM (WS)+ table (WS)* (where_c)? (WS)* ';' ;
 
@@ -36,6 +36,8 @@ DELETE : [Dd][Ee][Ll][Ee][Tt][Ee];
 SELECT : [Ss][Ee][Ll][Ee][Cc][Tt];
 
 CREATE : [Cc][Rr][Ee][Aa][Tt][Ee] (WS)+ [Tt][Aa][Bb][Ll][Ee];
+
+DESCRIBE : [Dd][Ee][Ss][Cc][Rr][Ii][Bb][Ee];
 
 WHERE : [Ww][Hh][Ee][Rr][Ee];
 
@@ -88,3 +90,5 @@ VARTYPE : INT | VARCHAR ;
 attribute : IDENTIFIER (WS)+ (INT | VARCHAR) ((WS)+ OPTIONS (WS)*)* ;
 
 attributes : (WS)* attribute ((WS)* COMMA (WS)* attribute)* ;
+
+describe_c : DESCRIBE (WS)+ IDENTIFIER (WS)* ';' ;
