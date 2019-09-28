@@ -53,6 +53,15 @@ class MySQLListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MySQLParser#exit_c.
+    def enterExit_c(self, ctx:MySQLParser.Exit_cContext):
+        pass
+
+    # Exit a parse tree produced by MySQLParser#exit_c.
+    def exitExit_c(self, ctx:MySQLParser.Exit_cContext):
+        pass
+
+
     # Enter a parse tree produced by MySQLParser#logical.
     def enterLogical(self, ctx:MySQLParser.LogicalContext):
         pass

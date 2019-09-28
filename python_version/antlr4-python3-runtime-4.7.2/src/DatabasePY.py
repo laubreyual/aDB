@@ -46,3 +46,32 @@ def loadTables(list_tables, table_schema):
 			i+=3
 		table_schema[data[0]] = [columns, data_types]
 	file.close()
+
+def saveDatabase(database, list_tables, table_schema):
+	file = open("database_files/table_schema", "w")
+
+	for table_name in table_schema:
+		columns = table_schema[table_name][0]
+		data_types = table_schema[table_name][1]
+		to_write = table_name
+		for index in range(0, len(columns)):
+			to_write += str(";" + columns[index]) + ";" + str(data_types[index][0]) + ";" + str(data_types[index][1])
+		file.write(to_write+"\n")
+	file.close()
+
+	for table_name in list_tables:
+		file = open("database_files/"+table_name+".csv", "w")
+		data = database[table_name]
+		for key in data:
+			to_write = str(key)
+			values = data[key]
+			for value in values:
+				if isinstance(value, str):
+					to_write += ',"' + value + '"'
+				else:
+					to_write += "," + str(value)
+			file.write(to_write+"\n")
+		file.close()
+
+
+

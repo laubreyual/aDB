@@ -1,1 +1,1 @@
-select * from sample, person where a>5 and birthdate="1997-01-01";
+select * from sample, person where a>5 and id<6;

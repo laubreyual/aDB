@@ -36,6 +36,8 @@ class InterpreterListener(MySQLListener):
 	def enterDescribe_c(self, ctx:MySQLParser.Describe_cContext):
 		InterpreterListener.command = "describe"
 		InterpreterListener.tables.append(str(ctx.IDENTIFIER()))
+	def enterExit_c(self, ctx:MySQLParser.Exit_cContext):
+		InterpreterListener.command = "exit"
 	def exitColumn_name(self, ctx:MySQLParser.Column_nameContext):
 		name = ctx.IDENTIFIER()
 		dot_name = ctx.DOT_IDENTIFIER()
@@ -76,6 +78,12 @@ class InterpreterListener(MySQLListener):
 			InterpreterListener.logicals.append("AND")
 		elif ctx.OR() != None:
 			InterpreterListener.logicals.append("OR")
+	def resetVariables():
+		InterpreterListener.command = None
+		InterpreterListener.columns = []
+		InterpreterListener.tables = []
+		InterpreterListener.conditions = []
+		InterpreterListener.logicals = []
 
 def evaluateCondition(op1, op2, operator):
 	
@@ -93,6 +101,32 @@ def evaluateCondition(op1, op2, operator):
 		return op1 != op2
 	else:
 		return False
+
+def pushCondition(database, table_schema, tables, conditions):
+	newDatabase = {}
+	for table in tables:
+		temp = database[table]
+		inCondition = False
+		for c in conditions:
+			 if c[0] == table:
+			 	condition = c
+			 	inCondition = True
+			 	break
+		if inCondition and len(condition)<6: #not two var
+			newTree = OOBTree()
+			for key in temp:
+				if condition[1] == 0: #key column
+					value = key
+				else:
+					value = temp[key][condition[1]-1]
+				if evaluateCondition(value, condition[3], condition[2]):
+					newTree.update({key:temp[key]})
+			newDatabase[table] = newTree
+
+		else:
+			newDatabase[table] = temp
+
+	return database
 
 def printDataRecursive(database, headers, tabulated, l, table_column, conditions, logicals, isPrintAll, isIncluded):
 	#print("Table column", table_column)
@@ -157,7 +191,7 @@ def printData(database, table_schema):
 	conditions = InterpreterListener.conditions
 	logicals = InterpreterListener.logicals
 
-	#print the column header
+	#get the column header
 	if len(columns) > 0:
 		column_headers = columns
 	else: # the column specified was *
@@ -178,7 +212,7 @@ def printData(database, table_schema):
 				list_columns.append(index)
 		table_column.append([table, list_columns])
 
-	#print(columns)
+	#fix the condition
 	for index in range(0, len(conditions)):
 		temp = conditions[index][0].split(".")
 		table_name = temp[0]
@@ -189,10 +223,11 @@ def printData(database, table_schema):
 			table_name = temp[0]
 			column_index = table_schema[table_name][0].index((temp[1]))
 			conditions[index] = conditions[index][:3] + [table_name, column_index] + conditions[index][4:]
-	#print(conditions)
+	
 	#assuming two conditions only with one logical
 	if len(logicals)==0 or (len(logicals)!=0 and logicals[0] == 'AND'):
 		isIncluded = True
+		database = pushCondition(database, table_schema, tables, conditions)
 	else:
 		isIncluded = False
 
@@ -323,39 +358,48 @@ def main(argv):
 
 	for table in list_tables:
 		loadDatabase(database, table)
+	while True:
+		# input_stream = FileStream(argv[1])
+		input_stream = InputStream(input("mysql> "))
+		try:
+			lexer = MySQLLexer(input_stream)
+			stream = CommonTokenStream(lexer)
+			parser = MySQLParser(stream)
+			parser.addErrorListener(SQLErrorListener())
+			tree = parser.s()
+			interpreter = InterpreterListener()
+			walker = ParseTreeWalker()
+			walker.walk(interpreter, tree)
+			
 
-	input_stream = FileStream(argv[1])
-	#input_stream = InputStream(input("Enter sql command: "))
-	lexer = MySQLLexer(input_stream)
-	stream = CommonTokenStream(lexer)
-	parser = MySQLParser(stream)
-	parser.addErrorListener(SQLErrorListener())
-	tree = parser.s()
-	interpreter = InterpreterListener()
-	walker = ParseTreeWalker()
-	walker.walk(interpreter, tree)
-	
+			try:
+				if interpreter.command=="exit":
+					break
+				elif interpreter.command=="select":
+					checkTables(list_tables)
+					checkColumns(table_schema)
+					checkConditions(table_schema)
 
-	try:
-		if interpreter.command=="select":
-			checkTables(list_tables)
-			checkColumns(table_schema)
-			checkConditions(table_schema)
+					printData(database, table_schema)
+				elif interpreter.command=="describe":
+					checkTables(list_tables)
 
-			printData(database, table_schema)
-		elif interpreter.command=="describe":
-			checkTables(list_tables)
-
-			describeTable(InterpreterListener.tables[0], table_schema)
-	except SQLError as e:
-		print(e.message)
-		print()
-	finally:
-		print("Command:", InterpreterListener.command)
-		print("Columns:", InterpreterListener.columns)
-		print("Tables:", InterpreterListener.tables)
-		print("Conditions:", InterpreterListener.conditions)
-		print("Logicals:", InterpreterListener.logicals)
+					describeTable(InterpreterListener.tables[0], table_schema)
+			except SQLError as e:
+				print(e.message)
+				print()
+			finally:
+				print("Command:", InterpreterListener.command)
+				print("Columns:", InterpreterListener.columns)
+				print("Tables:", InterpreterListener.tables)
+				print("Conditions:", InterpreterListener.conditions)
+				print("Logicals:", InterpreterListener.logicals)
+				InterpreterListener.resetVariables()
+		except Exception as e:
+			print(e)
+			print()
+	# save database here
+	saveDatabase(database, list_tables, table_schema)
 
 
 if __name__ == '__main__':

@@ -1,6 +1,6 @@
 grammar MySQL;
 
-s : select_c | delete_c | insert_c | create_c | describe_c;
+s : select_c | delete_c | insert_c | create_c | describe_c | exit_c;
 
 select_c : SELECT (WS)+ column (WS)+ FROM (WS)+ table (WS)* (where_c)? (WS)* ';' ;
 
@@ -10,6 +10,9 @@ insert_c : INSERT (WS)+ table ((WS)* PL column_name PR)? (WS)+ VALUES (WS)* PL v
 
 create_c : CREATE (WS)+ table (WS)* PL (WS)* attributes (WS)* PR (WS)*';' ;
 
+EXIT : [Ee][Xx][Ii][Tt] (WS)* ;
+
+exit_c : EXIT ';' ;
 
 WS : [ \t\r\n];
 
