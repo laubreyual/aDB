@@ -8,6 +8,7 @@ from DatabasePY import *
 from antlr4.error.ErrorListener import ErrorListener
 from tabulate import tabulate
 from SQLError import *
+import copy
 
 row_count = 0
 
@@ -105,6 +106,7 @@ def printDataRecursive(database, headers, tabulated, l, table_column, conditions
 				to_print = [database[table[0]][key][index-1] for index in table[1]]
 			
 			isIncluded_new = isIncluded
+			conditions = copy.deepcopy(conditions)
 			for condition in conditions:
 				if len(condition)>5 and condition[5] == "two_var":
 					if condition[0] == table[0]:
@@ -124,8 +126,8 @@ def printDataRecursive(database, headers, tabulated, l, table_column, conditions
 							isIncluded_new = isIncluded_new and evaluateCondition(condition[6], condition[7], condition[2])
 						elif logicals[0] == 'OR':
 							isIncluded_new = isIncluded_new or evaluateCondition(condition[6], condition[7], condition[2])
-						if key_index == len(database[table[0]])-1:
-							condition[6] = condition[7] = None
+						# if key_index == len(database[table[0]])-1:
+						# 	condition[6] = condition[7] = None
 				elif condition[0] == table[0]:
 					if len(logicals)==0 or (len(logicals)!=0 and logicals[0] == 'AND'):
 						if condition[1] == 0: #primary key column
