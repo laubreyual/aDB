@@ -69,10 +69,10 @@ class InterpreterListener(MySQLListener):
 			data_type = "two_var"
 		elif ctx.NUMBER() != None:
 			value = float(str(ctx.NUMBER()))
-			data_type = "number"
+			data_type = "float"
 		elif ctx.STRING() != None:
 			value = str(ctx.STRING())[1:-1]
-			data_type = "string"
+			data_type = "varchar"
 		else:
 			value = str(ctx.DATE())[1:-1]
 			data_type = "date"
@@ -96,10 +96,10 @@ class InterpreterListener(MySQLListener):
 				val = float(str(ctx.value(i).NUMBER()))
 				data_type = 'float'
 			elif ctx.value(i).DATE():
-				val = str(ctx.value(i).DATE())
+				val = str(ctx.value(i).DATE())[1:-1]
 				data_type = 'date'
 			else:
-				val = str(ctx.value(i).STRING())
+				val = str(ctx.value(i).STRING())[1:-1]
 				data_type = 'varchar'
 			InterpreterListener.insert_values.append(val)
 			InterpreterListener.insert_dtypes.append(data_type)
@@ -353,8 +353,8 @@ def checkConditions(table_schema):
 
 						data_type = table_schema[i][1][table_schema[i][0].index(j[0])][0]
 						if j[3] != data_type:
-							if j[3] == "date" and data_type == "string":
-								InterpreterListener.conditions[index][3] = "string"
+							if j[3] == "date" and data_type == "varchar":
+								InterpreterListener.conditions[index][3] = "varchar"
 							else:
 								raise DataTypeNotMatchError(j[0], data_type, j[2])
 						InterpreterListener.conditions[index][0] = i + "." + j[0]
@@ -367,8 +367,8 @@ def checkConditions(table_schema):
 					column_found = True
 				data_type = table_schema[table_name][1][table_schema[table_name][0].index(column_name)][0]
 				if data_type != j[3]:
-					if j[3] == "date" and data_type == "string":
-						InterpreterListener.conditions[index][3] = "string"
+					if j[3] == "date" and data_type == "varchar":
+						InterpreterListener.conditions[index][3] = "varchar"
 					else:
 						raise DataTypeNotMatchError(j[0], data_type, j[2])
 
@@ -394,7 +394,7 @@ def checkConditions(table_schema):
 					col_name2 = j[2][j[2].find(".")+1:]
 					col_index_1 = table_schema[tb_name1][0].index(col_name1)
 					col_index_2 = table_schema[tb_name2][0].index(col_name2)
-					if table_schema[tb_name1][1][col_index_1] != table_schema[tb_name2][1][col_index_2]:
+					if table_schema[tb_name1][1][col_index_1][0] != table_schema[tb_name2][1][col_index_2][0]:
 						raise DataTypeNotMatchError(col_name1, table_schema[tb_name1][1][col_index_1], col_name2, table_schema[tb_name2][1][col_index_2])
 
 			if not column_found:
@@ -414,9 +414,9 @@ def checkValidFloat(number, column_name, restriction):
 	return number
 
 def checkValidDate(date):
-	quotes = date[0]
+	# quotes = date[0]
 	try:
-		datetime.datetime.strptime(date.strip(quotes), '%Y-%m-%d')
+		datetime.datetime.strptime(date, '%Y-%m-%d')
 	except ValueError as e:
 		print('>', e)
 		raise InvalidDateError(date)
@@ -541,29 +541,50 @@ def main(argv):
 		# input_stream = FileStream(argv[1])
 		input_stream = InputStream(input("mysql> "))
 
-		try:
-			lexer = MySQLLexer(input_stream)
-			stream = CommonTokenStream(lexer)
-			parser = MySQLParser(stream)
-			parser.addErrorListener(SQLErrorListener())
-			tree = parser.s()
-			interpreter = InterpreterListener()
-			walker = ParseTreeWalker()
-			walker.walk(interpreter, tree)
-			
+		try:
 
-			try:
-				if interpreter.command=="exit":
-					break
-				elif interpreter.command=="select":
-					checkTables(list_tables)
-					checkColumns(table_schema)
-					checkConditions(table_schema)
-					printData(database, table_schema)
+			lexer = MySQLLexer(input_stream)
 
-				elif interpreter.command=="describe":
-					checkTables(list_tables)
-					describeTable(InterpreterListener.tables[0], table_schema)
+			stream = CommonTokenStream(lexer)
+
+			parser = MySQLParser(stream)
+
+			parser.addErrorListener(SQLErrorListener())
+
+			tree = parser.s()
+
+			interpreter = InterpreterListener()
+
+			walker = ParseTreeWalker()
+
+			walker.walk(interpreter, tree)
+
+			
+
+
+			try:
+
+				if interpreter.command=="exit":
+
+					break
+
+				elif interpreter.command=="select":
+
+					checkTables(list_tables)
+
+					checkColumns(table_schema)
+
+					checkConditions(table_schema)
+
+					printData(database, table_schema)
+
+
+				elif interpreter.command=="describe":
+
+					checkTables(list_tables)
+
+					describeTable(InterpreterListener.tables[0], table_schema)
+
 
 				elif interpreter.command=='insert':
 					checkTables(list_tables)
@@ -581,18 +602,26 @@ def main(argv):
 				
 			except SQLError as e:
 				print(e.message)
-				print()
+				print()
+
 			finally:
-				# print("Command:", InterpreterListener.command)
-				# print("Columns:", InterpreterListener.columns)
-				# print("Tables:", InterpreterListener.tables)
-				# print("Conditions:", InterpreterListener.conditions)
-				# print("Logicals:", InterpreterListener.logicals)
+				# print("Command:", InterpreterListener.command)
+
+				# print("Columns:", InterpreterListener.columns)
+
+				# print("Tables:", InterpreterListener.tables)
+
+				# print("Conditions:", InterpreterListener.conditions)
+
+				# print("Logicals:", InterpreterListener.logicals)
+
 				# print("Attributes:", InterpreterListener.attributes)
-				InterpreterListener.resetVariables()
+				InterpreterListener.resetVariables()
+
 				print()
 		except Exception as e:
-			print(e)
+			print(e)
+
 			print()
 	# save database here
 	saveDatabase(database, list_tables, table_schema)
