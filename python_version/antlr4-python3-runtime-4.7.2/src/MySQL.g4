@@ -54,7 +54,7 @@ IN : [Ii][Nn];
 
 VARCHAR : [Vv][Aa][Rr][Cc][Hh][Aa][Rr] (WS)* PL (WS)* NUMBER (WS)* PR;
 
-INT : [Ii][Nn][Tt] (WS)* PL (WS)* NUMBER (WS)* PR;
+FLOAT : [Ff][Ll][Oo][Aa][Tt] (WS)* PL (WS)* [0-9] COMMA [0-4] (WS)* PR;
 
 V_DATE : [Dd][Aa][Tt][Ee];
 
@@ -92,7 +92,7 @@ values_c : (WS)* (value) (WS)* (COMMA (WS)* (value))*;
 
 OPTIONS : PRIMARY | NOTNULL ;
 
-VARTYPE : INT | VARCHAR | V_DATE;
+VARTYPE : FLOAT | VARCHAR | V_DATE;
 
 ATTRIBUTE : IDENTIFIER (WS)+ VARTYPE ((WS)+ OPTIONS (WS)*)* ;
 

@@ -40,4 +40,34 @@ class DataTypeNotFound(SQLError):
 		self.message = 'DATATYPE "{}" does not exist.'.format(data_type)
 		super().__init__(self.message)
 
-		
+class StringSizeError(SQLError):
+	def __init__(self):
+		self.message = 'Invalid size for STRING(length). `length` should be between 0 to 300.'
+		super().__init__(self.message)
+
+class FloatSizeError(SQLError):
+	def __init__(self, typeof):
+		self.message = 'Invalid size for FLOAT(digits, precisions).'
+
+		if typeof == 'larger':
+			self.message = self.message + ' `digits` should be greater than `precisions`.'
+		elif typeof == 'digits':
+			self.message = self.message + ' `digits` should be between 1 to 9.'
+		elif typeof == 'precisions':
+			self.message = self.message + ' `precisions` should be between 0 to 4.'
+
+		super().__init__(self.message)
+
+class InvalidDateError(SQLError):
+	def __init__(self, date):
+		self.message = 'Invalid date.'
+		super().__init__(self.message)
+
+class InvalidFloatError(SQLError):
+	def __init__(self, number, restrictions, typeof):
+		self.message = 'Invalid value for float FLOAT{}.'.format(restrictions)
+
+		if typeof == 'limit':
+			self.message = self.message + ' value must be between -65000 and 65000.'
+
+		super().__init__(self.message)

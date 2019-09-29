@@ -9,6 +9,7 @@ from antlr4.error.ErrorListener import ErrorListener
 from tabulate import tabulate
 from SQLError import *
 import copy
+import datetime
 
 row_count = 0
 
@@ -93,13 +94,13 @@ class InterpreterListener(MySQLListener):
 		for i in range(len(ctx.value())):
 			if ctx.value(i).NUMBER():
 				val = float(str(ctx.value(i).NUMBER()))
-				data_type = 'number'
+				data_type = 'float'
 			elif ctx.value(i).DATE():
 				val = str(ctx.value(i).DATE())
 				data_type = 'date'
 			else:
 				val = str(ctx.value(i).STRING())
-				data_type = 'string'
+				data_type = 'varchar'
 			InterpreterListener.insert_values.append(val)
 			InterpreterListener.insert_dtypes.append(data_type)
 	def resetVariables():
@@ -277,11 +278,27 @@ def createTable(database, list_tables):
 		dtype = datatype.replace("(",";").replace(")",";")
 		if dtype == "date":
 			dtype += ";None;"
+
+		elif dtype.startswith('varchar'):
+			length = int(dtype.split(';')[1])
+			if length < 0 or length > 300:
+				raise StringSizeError()
+
+		elif dtype.startswith('float'):
+			restrictions = dtype.split(';')[1].split(',')
+			digits = int(restrictions[0])
+			precisions = int(restrictions[1])
+
+			if precisions > digits:
+				raise FloatSizeError('larger')
+			if digits < 1 or digits > 9:
+				raise FloatSizeError('digits')
+			if precisions < 0 or precisions > 4:
+				raise FloatSizeError('precisions')
+
 		table_schema += str(key)+";"+str(dtype)
 		
-	table_schema = table_schema.replace("int","number").replace("varchar","string")
 	table_schema = table_schema[:-1]	
-
 	saveTableToSchema(table_schema, table_name)
 
 	header.append("COMMAND EXECUTED SUCCESSFULLY")
@@ -383,6 +400,29 @@ def checkConditions(table_schema):
 			if not column_found:
 				raise ColumnNotFoundError('too many', 'too many')
 
+def checkValidVarchar(varchar, column_name, length):
+	if len(varchar) > length:
+		raise InvalidStringLengthError(varchar, column_name, length)
+	
+	return varchar
+
+def checkValidFloat(number, column_name, restriction):
+	# TODO: check valid float, number of digits, precisions
+	if number > 65000 or number < -65000:
+		raise InvalidFloatError(number, restriction, 'limit')
+
+	return number
+
+def checkValidDate(date):
+	quotes = date[0]
+	try:
+		datetime.datetime.strptime(date.strip(quotes), '%Y-%m-%d')
+	except ValueError as e:
+		print('>', e)
+		raise InvalidDateError(date)
+
+	return date
+
 def checkInsertData(table_schema, database):
 	table_count = len(InterpreterListener.tables)
 	if table_count > 1:
@@ -406,12 +446,12 @@ def checkInsertData(table_schema, database):
 			if db_dtypes[i][0] != query_dtypes[i]:
 				raise DataTypeNotMatchError(query_values[i], query_dtypes[i], db_columns[i], db_dtypes[i][0])
 
-			try:
-				if db_dtypes[i][0] == 'string' and len(query_values[i]) > db_dtypes[i][1]:
-					raise InvalidStringLengthError(query_values[i], db_columns[i], db_dtypes[i][1])
-			except TypeError:
-				# the restriction or length from (data_type, length) is sometimes None, therefore raising a TypeError
-				pass
+			if db_dtypes[i][0] == 'varchar':
+				query_values[i] = checkValidVarchar(query_values[i], db_columns[i], db_dtypes[i][1])
+			elif db_dtypes[i][0] == 'date':
+				query_values[i] = checkValidDate(query_values[i])
+			elif db_dtypes[i][0] == 'float':
+				query_values[i] = checkValidFloat(query_values[i], db_columns[i], db_dtypes[i][1])
 
 	else:
 		query_columns = [column.split('.')[1] for column in InterpreterListener.columns]
@@ -436,11 +476,12 @@ def checkInsertData(table_schema, database):
 			if db_dtype[0] != query_dtypes[i]:
 				raise DataTypeNotMatchError(query_values[i], query_dtypes[i], query_columns[i], db_dtype[0])
 
-			try:
-				if db_dtype[0] == 'string' and len(query_values[i]) > db_dtype[1]:
-					raise InvalidStringLengthError(query_values[i], query_columns[i], db_dtype[1])
-			except TypeError:
-				pass
+			if db_dtype[0] == 'varchar':
+				query_values[i] = checkValidVarchar(query_values[i], query_columns[i], db_dtype[1])
+			elif db_dtype[0] == 'date':
+				query_values[i] = checkValidDate(query_values[i])
+			elif db_dtype[0] == 'float':
+				query_values[i] = checkValidFloat(query_values[i], query_columns[i], db_dtype[1])
 	
 	table = database[table_name]
 
@@ -467,8 +508,8 @@ def describeTable(table, table_schema):
 		key = ''
 		if i == 0:
 			key = 'PRI'
-		if types[i][0] == "string":
-			data_type = "varchar("+str(types[i][1])+")"
+		if types[i][0] != "date":
+			data_type = '{}({})'.format(types[i][0], str(types[i][1]).replace('(','').replace(')',''))
 		else:
 			data_type = types[i][0]
 		toPrint.append([columns[i], data_type, key])
@@ -483,7 +524,7 @@ def main(argv):
 	database = {}
 	list_tables = []
 	table_schema = {}
-	list_vartype = ["float", "varchar"]
+	list_vartype = ["float", "varchar", "date"]
 	#list_tables = ["sample", "sample2", "person"]
 	#index 0 is always the primary key
 	# table_schema = {"sample":[["a", "b", "c"],[("number", None), ("string", 50), ("string", 50)]],

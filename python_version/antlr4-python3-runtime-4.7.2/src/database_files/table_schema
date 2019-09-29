@@ -1,4 +1,6 @@
-sample;a;number;None;b;string;50;c;string;50
-sample2;d;number;None;e;string;50;f;string;50
-person;id;number;None;name;string;50;birthdate;date;None
-sample3;id;number;10;fname;string;100
+sample;a;float;(9, 4);b;varchar;50;c;varchar;50
+sample2;d;float;(9, 4);e;varchar;50;f;varchar;50
+person;id;float;(9, 4);name;varchar;50;birthdate;date;None
+sample3;id;float;(9, 4);fname;varchar;100
+bday;kaarawan;date;None;pangalan;varchar;30;edad;float;(3, 0)
+tbl;kaarawan;date;None;pangalan;varchar;30;edad;float;(3, 0)

@@ -197,7 +197,7 @@ class MySQLParser ( Parser ):
                       "DOT", "COMMA", "PL", "PR", "NUMBER", "DATE", "STRING", 
                       "INSERT", "VALUES", "DELETE", "SELECT", "CREATE", 
                       "DESCRIBE", "WHERE", "FROM", "BETWEEN", "LIKE", "IN", 
-                      "VARCHAR", "INT", "V_DATE", "PRIMARY", "NOTNULL", 
+                      "VARCHAR", "FLOAT", "V_DATE", "PRIMARY", "NOTNULL", 
                       "AND", "OR", "RELATIONAL", "IDENTIFIER", "DOT_IDENTIFIER", 
                       "OPTIONS", "VARTYPE", "ATTRIBUTE" ]
 
@@ -248,7 +248,7 @@ class MySQLParser ( Parser ):
     LIKE=21
     IN=22
     VARCHAR=23
-    INT=24
+    FLOAT=24
     V_DATE=25
     PRIMARY=26
     NOTNULL=27

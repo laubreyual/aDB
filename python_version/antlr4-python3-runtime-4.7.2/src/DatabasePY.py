@@ -39,10 +39,13 @@ def loadTables(list_tables, table_schema):
 		i = 1
 		while i < len(data):
 			columns.append(data[i])
-			if data[i+2] == "None":
-				data_types.append((data[i+1],None))
+			if data[i+1] == "float":
+				restrictions = data[i+2].split(",")
+				data_types.append( (data[i+1], (int(restrictions[0]), int(restrictions[1]))) )
+			elif data[i+1] == "varchar":
+				data_types.append( (data[i+1], int(data[i+2])) )
 			else:
-				data_types.append((data[i+1],int(data[i+2])))
+				data_types.append( (data[i+1], None) )
 			i+=3
 		table_schema[data[0]] = [columns, data_types]
 	file.close()
@@ -55,7 +58,12 @@ def saveDatabase(database, list_tables, table_schema):
 		data_types = table_schema[table_name][1]
 		to_write = table_name
 		for index in range(0, len(columns)):
-			to_write += str(";" + columns[index]) + ";" + str(data_types[index][0]) + ";" + str(data_types[index][1])
+			dtype = str(data_types[index][0])
+			restriction = data_types[index][1]
+			if dtype == 'float':
+				restriction = str(restriction).replace('(','').replace(')','').replace(' ','')
+
+			to_write += str(";" + columns[index]) + ";" + str(dtype) + ";" + str(restriction)
 		file.write(to_write+"\n")
 	file.close()
 
