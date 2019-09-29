@@ -19,3 +19,15 @@ class DataTypeNotMatchError(SQLError):
 		if data_type2:
 			self.message = 'Data type did not match in condition. "{}" is of TYPE "{}", while "{}" is TYPE "{}".'.format(attrib, data_type, value, data_type2)
 		super().__init__(self.message)
+
+class TableFoundError(SQLError):
+	def __init__(self, table):
+		self.message = 'TABLE "{}" already exists.'.format(table)
+		super().__init__(self.message)
+
+class DataTypeNotFound(SQLError):
+	def __init__(self, data_type):
+		self.message = 'DATATYPE "{}" does not exist.'.format(data_type)
+		super().__init__(self.message)
+
+		

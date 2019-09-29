@@ -56,6 +56,8 @@ VARCHAR : [Vv][Aa][Rr][Cc][Hh][Aa][Rr] (WS)* PL (WS)* NUMBER (WS)* PR;
 
 INT : [Ii][Nn][Tt] (WS)* PL (WS)* NUMBER (WS)* PR;
 
+V_DATE : [Dd][Aa][Tt][Ee];
+
 PRIMARY : [Pp][Rr][Ii][Mm][Aa][Rr][Yy][_][Kk][Ee][Yy] ;
 
 NOTNULL : [Nn][Oo][Tt] (WS)+ [Nn][Uu][Ll][Ll];
@@ -88,10 +90,10 @@ values_c : (WS)* (NUMBER | STRING) (WS)* (COMMA (WS)* (NUMBER | STRING))*;
 
 OPTIONS : PRIMARY | NOTNULL ;
 
-VARTYPE : INT | VARCHAR ;
+VARTYPE : INT | VARCHAR | V_DATE;
 
-attribute : IDENTIFIER (WS)+ (INT | VARCHAR) ((WS)+ OPTIONS (WS)*)* ;
+ATTRIBUTE : IDENTIFIER (WS)+ VARTYPE ((WS)+ OPTIONS (WS)*)* ;
 
-attributes : (WS)* attribute ((WS)* COMMA (WS)* attribute)* ;
+attributes : (WS)* ATTRIBUTE ((WS)* COMMA (WS)* ATTRIBUTE)* ;
 
 describe_c : DESCRIBE (WS)+ IDENTIFIER (WS)* ';' ;

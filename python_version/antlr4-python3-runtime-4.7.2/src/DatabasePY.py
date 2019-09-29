@@ -73,5 +73,11 @@ def saveDatabase(database, list_tables, table_schema):
 			file.write(to_write+"\n")
 		file.close()
 
+def saveTableToSchema(table_schema, new_table):
+	file = open("database_files/table_schema", "a")
+	file.write(table_schema+"\n")
+	file.close()
+
+	file = open("database_files/"+new_table+".csv","w")
 
 

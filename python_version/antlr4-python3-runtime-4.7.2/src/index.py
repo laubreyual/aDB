@@ -1,4 +1,4 @@
-import sys
+import sys, csv
 from antlr4 import *
 from MySQLLexer import MySQLLexer
 from MySQLParser import MySQLParser
@@ -24,6 +24,7 @@ class InterpreterListener(MySQLListener):
 	tables = []
 	conditions = []
 	logicals = []
+	attributes = {}
 
 	def enterS(self, ctx:MySQLParser.SContext):
 		InterpreterListener.command = "select"
@@ -78,6 +79,14 @@ class InterpreterListener(MySQLListener):
 			InterpreterListener.logicals.append("AND")
 		elif ctx.OR() != None:
 			InterpreterListener.logicals.append("OR")
+	def exitAttributes(self, ctx:MySQLParser.AttributesContext):
+		i = 0		
+		while True:
+			(key, value) = str(ctx.ATTRIBUTE(i)).split(" ")	
+			i+=1
+			InterpreterListener.attributes[key] = value
+			if ctx.ATTRIBUTE(i) == None:
+				break
 	def resetVariables():
 		InterpreterListener.command = None
 		InterpreterListener.columns = []
@@ -238,11 +247,44 @@ def printData(database, table_schema):
 		global row_count
 		print("Row Count:", row_count)
 		
+def createTable(database, list_tables):
+	toPrint = []
+	header = []
+	tables = InterpreterListener.tables
+	attributes = InterpreterListener.attributes
+	table_name = str(tables[0])
+	table_schema = table_name+";"
+	i = 0	
+	for key, datatype in attributes.items():
+		dtype = datatype.replace("(",";").replace(")",";")
+		if dtype == "date":
+			dtype += ";None;"
+		table_schema += str(key)+";"+str(dtype)
+		
+	table_schema = table_schema.replace("int","number").replace("varchar","string")
+	table_schema = table_schema[:-1]	
+
+	saveTableToSchema(table_schema, table_name)
+
+	header.append("COMMAND EXECUTED SUCCESSFULLY")
+	toPrint.append(["CREATED TABLE "+table_name])
+	print(tabulate(toPrint, headers=header, tablefmt='orgtbl'))
 
 def checkTables(db_tables):
 	for table in InterpreterListener.tables:
 		if table not in db_tables:
 			raise TableNotFoundError(table)
+
+def checkExistingTable(db_tables):
+	for table in InterpreterListener.tables:
+		if table in db_tables:
+			raise TableFoundError(table)
+
+# def checkDataType(datatypes, list_vartype):
+# 	for key, value in datatypes:
+# 			datatype = (value.split("(")[0])			
+# 			if datatype.lower() not in list_vartype:
+# 				raise DataTypeNotFound(datatype)
 
 def checkColumns(table_schema):
 	for index in range(0, len(InterpreterListener.columns)):
@@ -338,6 +380,7 @@ def describeTable(table, table_schema):
 		else:
 			data_type = types[i][0]
 		toPrint.append([columns[i], data_type, key])
+	print(toPrint)
 	print(tabulate(toPrint, headers=header, tablefmt='orgtbl'))
 
 
@@ -346,6 +389,7 @@ def main(argv):
 	database = {}
 	list_tables = []
 	table_schema = {}
+	list_vartype = ["int", "varchar"]
 	#list_tables = ["sample", "sample2", "person"]
 	#index 0 is always the primary key
 	# table_schema = {"sample":[["a", "b", "c"],[("number", None), ("string", 50), ("string", 50)]],
@@ -370,7 +414,7 @@ def main(argv):
 			interpreter = InterpreterListener()
 			walker = ParseTreeWalker()
 			walker.walk(interpreter, tree)
-			
+
 
 			try:
 				if interpreter.command=="exit":
@@ -385,6 +429,14 @@ def main(argv):
 					checkTables(list_tables)
 
 					describeTable(InterpreterListener.tables[0], table_schema)
+				elif interpreter.command=="create":
+					checkExistingTable(list_tables)
+					# checkDataType(InterpreterListener.attributes.items(), list_vartype)
+					createTable(database, list_tables)
+					loadTables(list_tables, table_schema)
+					for table in list_tables:
+						loadDatabase(database, table)
+				
 			except SQLError as e:
 				print(e.message)
 				print()
@@ -394,11 +446,14 @@ def main(argv):
 				print("Tables:", InterpreterListener.tables)
 				print("Conditions:", InterpreterListener.conditions)
 				print("Logicals:", InterpreterListener.logicals)
+				print("Attributes:", InterpreterListener.attributes)
 				InterpreterListener.resetVariables()
+				print()
 		except Exception as e:
 			print(e)
 			print()
 	# save database here
+	print(table_schema)
 	saveDatabase(database, list_tables, table_schema)
 
 
