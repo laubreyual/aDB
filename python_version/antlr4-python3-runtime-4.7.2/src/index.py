@@ -1,4 +1,4 @@
-import sys, csv
+import sys
 from antlr4 import *
 from MySQLLexer import MySQLLexer
 from MySQLParser import MySQLParser
@@ -380,7 +380,6 @@ def describeTable(table, table_schema):
 		else:
 			data_type = types[i][0]
 		toPrint.append([columns[i], data_type, key])
-	print(toPrint)
 	print(tabulate(toPrint, headers=header, tablefmt='orgtbl'))
 
 
@@ -453,7 +452,6 @@ def main(argv):
 			print(e)
 			print()
 	# save database here
-	print(table_schema)
 	saveDatabase(database, list_tables, table_schema)
 
 
