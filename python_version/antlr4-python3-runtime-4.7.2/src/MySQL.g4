@@ -6,7 +6,7 @@ select_c : SELECT (WS)+ column (WS)+ FROM (WS)+ table (WS)* (where_c)? (WS)* ';'
 
 delete_c : DELETE (WS)+ FROM (WS)+ table (WS)* (where_c)? (WS)* ';' ;
 
-insert_c : INSERT (WS)+ table ((WS)* PL column_name PR)? (WS)+ VALUES (WS)* PL values_c PR ';' (WS)* ;
+insert_c : INSERT (WS)+ table ((WS)* PL column PR)? (WS)+ VALUES (WS)* PL values_c PR ';' (WS)* ;
 
 create_c : CREATE (WS)+ table (WS)* PL (WS)* attributes (WS)* PR (WS)*';' ;
 
@@ -84,7 +84,9 @@ s_condition : IDENTIFIER (DOT_IDENTIFIER)? (WS)* RELATIONAL (WS)* (IDENTIFIER| N
 
 condition : s_condition ((WS)+ logical (WS)+ s_condition)*;
 
-values_c : (WS)* (NUMBER | STRING) (WS)* (COMMA (WS)* (NUMBER | STRING))*;
+value: (NUMBER | STRING | DATE);
+
+values_c : (WS)* (value) (WS)* (COMMA (WS)* (value))*;
 
 OPTIONS : PRIMARY | NOTNULL ;
 

@@ -125,6 +125,15 @@ class MySQLListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MySQLParser#value.
+    def enterValue(self, ctx:MySQLParser.ValueContext):
+        pass
+
+    # Exit a parse tree produced by MySQLParser#value.
+    def exitValue(self, ctx:MySQLParser.ValueContext):
+        pass
+
+
     # Enter a parse tree produced by MySQLParser#values_c.
     def enterValues_c(self, ctx:MySQLParser.Values_cContext):
         pass
