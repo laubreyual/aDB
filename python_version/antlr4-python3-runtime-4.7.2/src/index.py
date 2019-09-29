@@ -16,7 +16,7 @@ class SQLErrorListener(ErrorListener):
 	def __init__(self):
 		super(SQLErrorListener, self).__init__()
 	def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
-		raise Exception("Syntax error")
+		raise SQLError("Syntax error")
 
 class InterpreterListener(MySQLListener):
 	command = None
@@ -25,6 +25,8 @@ class InterpreterListener(MySQLListener):
 	conditions = []
 	logicals = []
 	attributes = {}
+	insert_values = []
+	insert_dtypes = []
 
 	def enterS(self, ctx:MySQLParser.SContext):
 		InterpreterListener.command = "select"
@@ -87,12 +89,28 @@ class InterpreterListener(MySQLListener):
 			InterpreterListener.attributes[key] = value
 			if ctx.ATTRIBUTE(i) == None:
 				break
+	def exitValues_c(self, ctx:MySQLParser.Values_cContext):
+		for i in range(len(ctx.value())):
+			if ctx.value(i).NUMBER():
+				val = float(str(ctx.value(i).NUMBER()))
+				data_type = 'number'
+			elif ctx.value(i).DATE():
+				val = str(ctx.value(i).DATE())
+				data_type = 'date'
+			else:
+				val = str(ctx.value(i).STRING())
+				data_type = 'string'
+			InterpreterListener.insert_values.append(val)
+			InterpreterListener.insert_dtypes.append(data_type)
 	def resetVariables():
 		InterpreterListener.command = None
 		InterpreterListener.columns = []
 		InterpreterListener.tables = []
 		InterpreterListener.conditions = []
 		InterpreterListener.logicals = []
+		InterpreterListener.insert_values = []
+		InterpreterListener.insert_dtypes = []
+		InterpreterListener.attributes = {}
 
 def evaluateCondition(op1, op2, operator):
 	
@@ -245,7 +263,7 @@ def printData(database, table_schema):
 	if len(tabulated)>0:
 		print(tabulate(tabulated, headers=column_headers, tablefmt='orgtbl'))
 		global row_count
-		print("Row Count:", row_count)
+		print("Row Count:", len(tabulated))
 		
 def createTable(database, list_tables):
 	toPrint = []
@@ -365,6 +383,80 @@ def checkConditions(table_schema):
 			if not column_found:
 				raise ColumnNotFoundError('too many', 'too many')
 
+def checkInsertData(table_schema, database):
+	table_count = len(InterpreterListener.tables)
+	if table_count > 1:
+		raise SQLException('Too many tables for INSERT')
+
+	table_name = InterpreterListener.tables[0]
+	column_count = len(InterpreterListener.columns)
+
+	query_values = InterpreterListener.insert_values # values from query
+	query_dtypes = InterpreterListener.insert_dtypes # data types derived from query_values; see exitValues_c()
+	db_columns = table_schema[table_name][0]	# column names derived from table schema
+
+	# the first if-else blocks are for checking the data type and string length
+	if column_count == 0:
+		# if there is no columns stated, values() should follow the same order in table_schema
+		db_dtypes = [i for i in table_schema[table_name][1]]
+		query_columns = db_columns
+		primary_key = query_values[0]
+
+		for i in range(len(query_dtypes)):
+			if db_dtypes[i][0] != query_dtypes[i]:
+				raise DataTypeNotMatchError(query_values[i], query_dtypes[i], db_columns[i], db_dtypes[i][0])
+
+			try:
+				if db_dtypes[i][0] == 'string' and len(query_values[i]) > db_dtypes[i][1]:
+					raise InvalidStringLengthError(query_values[i], db_columns[i], db_dtypes[i][1])
+			except TypeError:
+				# the restriction or length from (data_type, length) is sometimes None, therefore raising a TypeError
+				pass
+
+	else:
+		query_columns = [column.split('.')[1] for column in InterpreterListener.columns]
+		db_dtypes = []
+		db_columns_lookup = dict()
+		primary_attrib = db_columns[0]
+
+
+		if primary_attrib not in db_columns:
+			raise SQLError('Primary key/attribute "{}" should be included when inserting.'.format(primary_attrib))
+
+		for i in range(len(db_columns)):
+			db_columns_lookup[db_columns[i]] = table_schema[table_name][1][i]
+
+		for i in range(len(query_columns)):
+			# the data type will be checked depending on the order of columns stated in the query
+			db_dtype = db_columns_lookup[ query_columns[i] ]
+
+			if query_columns[i] == primary_attrib:
+				primary_key = query_values[i]
+
+			if db_dtype[0] != query_dtypes[i]:
+				raise DataTypeNotMatchError(query_values[i], query_dtypes[i], query_columns[i], db_dtype[0])
+
+			try:
+				if db_dtype[0] == 'string' and len(query_values[i]) > db_dtype[1]:
+					raise InvalidStringLengthError(query_values[i], query_columns[i], db_dtype[1])
+			except TypeError:
+				pass
+	
+	table = database[table_name]
+
+	if primary_key in table.keys():
+		# checking for primary key; TODO: check foreign key
+		raise PrimaryKeyAlreadyExistsError(primary_key, table_name)
+
+	# swap the position of values to mirror schema; for easier insertion
+	for i in range(len(db_columns)):
+		for j in range(len(db_columns)):
+			if db_columns[i] == query_columns[j]:
+				query_columns[i], query_columns[j] = query_columns[j], query_columns[i]
+				query_values[i], query_values[j] = query_values[j], query_values[i]
+
+	return table_name, query_values
+
 def describeTable(table, table_schema):
 	header = ["Field", "Type", "Key"]
 	columns = table_schema[table][0]
@@ -382,13 +474,16 @@ def describeTable(table, table_schema):
 		toPrint.append([columns[i], data_type, key])
 	print(tabulate(toPrint, headers=header, tablefmt='orgtbl'))
 
+def insertDataIntoTable(db_table, query_values):
+	db_table.update( {query_values[0] : query_values[1:]} )
+	print('> Insert succesful.');
 
 
 def main(argv):
 	database = {}
 	list_tables = []
 	table_schema = {}
-	list_vartype = ["int", "varchar"]
+	list_vartype = ["float", "varchar"]
 	#list_tables = ["sample", "sample2", "person"]
 	#index 0 is always the primary key
 	# table_schema = {"sample":[["a", "b", "c"],[("number", None), ("string", 50), ("string", 50)]],
@@ -404,30 +499,37 @@ def main(argv):
 	while True:
 		# input_stream = FileStream(argv[1])
 		input_stream = InputStream(input("mysql> "))
-		try:
-			lexer = MySQLLexer(input_stream)
-			stream = CommonTokenStream(lexer)
-			parser = MySQLParser(stream)
-			parser.addErrorListener(SQLErrorListener())
-			tree = parser.s()
-			interpreter = InterpreterListener()
-			walker = ParseTreeWalker()
-			walker.walk(interpreter, tree)
 
+		try:
+			lexer = MySQLLexer(input_stream)
+			stream = CommonTokenStream(lexer)
+			parser = MySQLParser(stream)
+			parser.addErrorListener(SQLErrorListener())
+			tree = parser.s()
+			interpreter = InterpreterListener()
+			walker = ParseTreeWalker()
+			walker.walk(interpreter, tree)
+			
 
-			try:
-				if interpreter.command=="exit":
-					break
-				elif interpreter.command=="select":
+			try:
+				if interpreter.command=="exit":
+					break
+				elif interpreter.command=="select":
+					checkTables(list_tables)
+					checkColumns(table_schema)
+					checkConditions(table_schema)
+					printData(database, table_schema)
+
+				elif interpreter.command=="describe":
+					checkTables(list_tables)
+					describeTable(InterpreterListener.tables[0], table_schema)
+
+				elif interpreter.command=='insert':
 					checkTables(list_tables)
 					checkColumns(table_schema)
-					checkConditions(table_schema)
+					table_name, query_values = checkInsertData(table_schema, database)
+					insertDataIntoTable(database[table_name], query_values)
 
-					printData(database, table_schema)
-				elif interpreter.command=="describe":
-					checkTables(list_tables)
-
-					describeTable(InterpreterListener.tables[0], table_schema)
 				elif interpreter.command=="create":
 					checkExistingTable(list_tables)
 					# checkDataType(InterpreterListener.attributes.items(), list_vartype)
@@ -438,18 +540,18 @@ def main(argv):
 				
 			except SQLError as e:
 				print(e.message)
-				print()
+				print()
 			finally:
-				print("Command:", InterpreterListener.command)
-				print("Columns:", InterpreterListener.columns)
-				print("Tables:", InterpreterListener.tables)
-				print("Conditions:", InterpreterListener.conditions)
-				print("Logicals:", InterpreterListener.logicals)
-				print("Attributes:", InterpreterListener.attributes)
-				InterpreterListener.resetVariables()
+				# print("Command:", InterpreterListener.command)
+				# print("Columns:", InterpreterListener.columns)
+				# print("Tables:", InterpreterListener.tables)
+				# print("Conditions:", InterpreterListener.conditions)
+				# print("Logicals:", InterpreterListener.logicals)
+				# print("Attributes:", InterpreterListener.attributes)
+				InterpreterListener.resetVariables()
 				print()
 		except Exception as e:
-			print(e)
+			print(e)
 			print()
 	# save database here
 	saveDatabase(database, list_tables, table_schema)
