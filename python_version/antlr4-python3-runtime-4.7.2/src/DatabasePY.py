@@ -71,7 +71,10 @@ def saveDatabase(database, list_tables, table_schema):
 		file = open("database_files/"+table_name+".csv", "w")
 		data = database[table_name]
 		for key in data:
-			to_write = str(key)
+			if isinstance(key, str):
+				to_write = '"' + str(key) + '"'
+			else:
+				to_write = str(key)
 			values = data[key]
 			for value in values:
 				if isinstance(value, str):
