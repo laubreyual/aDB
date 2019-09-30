@@ -10,6 +10,7 @@ from tabulate import tabulate
 from SQLError import *
 import copy
 import datetime
+import os
 
 row_count = 0
 
@@ -42,6 +43,10 @@ class InterpreterListener(MySQLListener):
 		InterpreterListener.tables.append(str(ctx.IDENTIFIER()))
 	def enterExit_c(self, ctx:MySQLParser.Exit_cContext):
 		InterpreterListener.command = "exit"
+	def enterShow_c(self, ctx:MySQLParser.Show_cContext):
+		InterpreterListener.command = "show"
+	def enterDrop_c(self, ctx:MySQLParser.Drop_cContext):
+		InterpreterListener.command = "drop"
 	def exitColumn_name(self, ctx:MySQLParser.Column_nameContext):
 		name = ctx.IDENTIFIER()
 		dot_name = ctx.DOT_IDENTIFIER()
@@ -265,6 +270,8 @@ def printData(database, table_schema):
 		print(tabulate(tabulated, headers=column_headers, tablefmt='orgtbl'))
 		global row_count
 		print("Row Count:", len(tabulated))
+	else:
+		print("Row Count: 0")
 		
 def createTable(database, list_tables):
 	toPrint = []
@@ -515,6 +522,28 @@ def describeTable(table, table_schema):
 		toPrint.append([columns[i], data_type, key])
 	print(tabulate(toPrint, headers=header, tablefmt='orgtbl'))
 
+def showTables(list_tables):
+	tabulated = []
+	for table in list_tables:
+		tabulated.append([table])
+	print(tabulate(tabulated, headers=["Tables"], tablefmt='orgtbl'))
+
+def dropTables(list_tables, table_schema, database):
+	tables_to_delete = InterpreterListener.tables
+	checkTables(list_tables)
+	for table_name in tables_to_delete:
+		if table_name in list_tables:
+			list_tables.remove(table_name)
+		if table_name in table_schema:
+			table_schema.pop(table_name)
+		if table_name in database:
+			database.pop(table_name)
+		if os.path.isfile("database_files/"+table_name+".csv"):
+			os.remove("database_files/"+table_name+".csv")
+	saveDatabase(database, list_tables, table_schema)
+	print("Query OK")
+
+
 def insertDataIntoTable(db_table, query_values):
 	db_table.update( {query_values[0] : query_values[1:]} )
 	print('> Insert succesful.');
@@ -599,6 +628,12 @@ def main(argv):
 					loadTables(list_tables, table_schema)
 					for table in list_tables:
 						loadDatabase(database, table)
+
+				elif interpreter.command=="show":
+					showTables(list_tables)
+
+				elif interpreter.command=="drop":
+					dropTables(list_tables, table_schema, database)
 				
 			except SQLError as e:
 				print(e.message)

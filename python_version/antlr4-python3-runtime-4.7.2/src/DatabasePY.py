@@ -30,7 +30,7 @@ def loadDatabase(database, table):
 
 def loadTables(list_tables, table_schema):
 	file = open("database_files/table_schema", "r")
-
+	list_tables.clear()
 	for line in file:
 		data = line[:-1].split(";")
 		list_tables.append(data[0])

@@ -53,6 +53,24 @@ class MySQLListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MySQLParser#show_c.
+    def enterShow_c(self, ctx:MySQLParser.Show_cContext):
+        pass
+
+    # Exit a parse tree produced by MySQLParser#show_c.
+    def exitShow_c(self, ctx:MySQLParser.Show_cContext):
+        pass
+
+
+    # Enter a parse tree produced by MySQLParser#drop_c.
+    def enterDrop_c(self, ctx:MySQLParser.Drop_cContext):
+        pass
+
+    # Exit a parse tree produced by MySQLParser#drop_c.
+    def exitDrop_c(self, ctx:MySQLParser.Drop_cContext):
+        pass
+
+
     # Enter a parse tree produced by MySQLParser#exit_c.
     def enterExit_c(self, ctx:MySQLParser.Exit_cContext):
         pass
