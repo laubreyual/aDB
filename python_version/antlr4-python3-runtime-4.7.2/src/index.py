@@ -29,6 +29,7 @@ class InterpreterListener(MySQLListener):
 	attributes = {}
 	insert_values = []
 	insert_dtypes = []
+	duplicate_column = {}
 
 	def enterS(self, ctx:MySQLParser.SContext):
 		InterpreterListener.command = "select"
@@ -91,6 +92,9 @@ class InterpreterListener(MySQLListener):
 		i = 0		
 		while True:
 			(key, value) = str(ctx.ATTRIBUTE(i)).split(" ")	
+			if key in InterpreterListener.attributes:
+				InterpreterListener.duplicate_column[key] = False
+				break
 			i+=1
 			InterpreterListener.attributes[key] = value
 			if ctx.ATTRIBUTE(i) == None:
@@ -117,6 +121,7 @@ class InterpreterListener(MySQLListener):
 		InterpreterListener.insert_values = []
 		InterpreterListener.insert_dtypes = []
 		InterpreterListener.attributes = {}
+		InterpreterListener.duplicate_column = {}
 
 def evaluateCondition(op1, op2, operator):
 	
@@ -321,6 +326,11 @@ def checkExistingTable(db_tables):
 	for table in InterpreterListener.tables:
 		if table in db_tables:
 			raise TableFoundError(table)
+
+def checkDuplicateColumns(duplicate_col):
+	for key, value in duplicate_col.items():
+		if value != None and value == False:
+			raise DuplicateColumnError(key)
 
 # def checkDataType(datatypes, list_vartype):
 # 	for key, value in datatypes:
@@ -623,6 +633,7 @@ def main(argv):
 
 				elif interpreter.command=="create":
 					checkExistingTable(list_tables)
+					checkDuplicateColumns(InterpreterListener.duplicate_column)
 					# checkDataType(InterpreterListener.attributes.items(), list_vartype)
 					createTable(database, list_tables)
 					loadTables(list_tables, table_schema)
