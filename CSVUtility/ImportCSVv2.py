@@ -1,7 +1,6 @@
 import csv, ast, os, sys
 import datetime
 from pathlib import Path
-# from src.SQLError import *
 
 # GLOBAL VARIABLE
 table_list = {}
