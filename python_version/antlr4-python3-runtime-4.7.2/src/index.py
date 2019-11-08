@@ -11,6 +11,10 @@ from SQLError import *
 import copy
 import datetime
 import os
+import re
+
+from tkinter import Tk
+from GUI import MainGUI
 
 row_count = 0
 
@@ -30,6 +34,7 @@ class InterpreterListener(MySQLListener):
 	insert_values = []
 	insert_dtypes = []
 	duplicate_column = {}
+	is_pk_set = False
 
 	def enterS(self, ctx:MySQLParser.SContext):
 		InterpreterListener.command = "select"
@@ -89,16 +94,31 @@ class InterpreterListener(MySQLListener):
 		elif ctx.OR() != None:
 			InterpreterListener.logicals.append("OR")
 	def exitAttributes(self, ctx:MySQLParser.AttributesContext):
-		i = 0		
-		while True:
-			(key, value) = str(ctx.ATTRIBUTE(i)).split(" ")	
+		i = 0	
+		primary_key = {}
+		while True:	
+			if re.search('PRIMARY_KEY', str(ctx.ATTRIBUTE(i)), re.IGNORECASE):
+			# if "PRIMARY_KEY" in str(ctx.ATTRIBUTE(i)):
+				pk_array = str(ctx.ATTRIBUTE(i)).split(" ")
+				pk_key = pk_array[0]
+				pk_val = pk_array[1]
+				primary_key[pk_key] = pk_val
+			
+			if len(primary_key) > 0:
+				InterpreterListener.is_pk_set = True
+								
+			col_array = str(ctx.ATTRIBUTE(i)).split(" ")
+			key = col_array[0]
+			value = col_array[1]
 			if key in InterpreterListener.attributes:
 				InterpreterListener.duplicate_column[key] = False
-				break
-			i+=1
+				break		
 			InterpreterListener.attributes[key] = value
+			i+=1
 			if ctx.ATTRIBUTE(i) == None:
 				break
+		primary_key.update(InterpreterListener.attributes)
+		InterpreterListener.attributes = primary_key		
 	def exitValues_c(self, ctx:MySQLParser.Values_cContext):
 		for i in range(len(ctx.value())):
 			if ctx.value(i).NUMBER():
@@ -272,17 +292,19 @@ def printData(database, table_schema):
 	tabulated = []
 	printDataRecursive(database, column_headers, tabulated, [], table_column, conditions, logicals, not len(columns)>0, isIncluded)
 	if len(tabulated)>0:
-		print(tabulate(tabulated, headers=column_headers, tablefmt='orgtbl'))
+		return tabulate(tabulated, headers=column_headers, tablefmt='orgtbl')
 		global row_count
 		print("Row Count:", len(tabulated))
 	else:
 		print("Row Count: 0")
+		return "Row Count: 0"
 		
 def createTable(database, list_tables):
 	toPrint = []
 	header = []
 	tables = InterpreterListener.tables
 	attributes = InterpreterListener.attributes
+	pk_set = InterpreterListener.is_pk_set
 	table_name = str(tables[0])
 	table_schema = table_name+";"
 	i = 0	
@@ -315,7 +337,10 @@ def createTable(database, list_tables):
 
 	header.append("COMMAND EXECUTED SUCCESSFULLY")
 	toPrint.append(["CREATED TABLE "+table_name])
-	print(tabulate(toPrint, headers=header, tablefmt='orgtbl'))
+	if not pk_set:
+		print("NO PRIMARY KEY (PK) SET. FIRST COLUMN WILL BE SET AS THE PK.")
+
+	return tabulate(toPrint, headers=header, tablefmt='orgtbl')
 
 def checkTables(db_tables):
 	for table in InterpreterListener.tables:
@@ -530,13 +555,14 @@ def describeTable(table, table_schema):
 		else:
 			data_type = types[i][0]
 		toPrint.append([columns[i], data_type, key])
-	print(tabulate(toPrint, headers=header, tablefmt='orgtbl'))
+	return tabulate(toPrint, headers=header, tablefmt='orgtbl')
 
 def showTables(list_tables):
 	tabulated = []
 	for table in list_tables:
 		tabulated.append([table])
-	print(tabulate(tabulated, headers=["Tables"], tablefmt='orgtbl'))
+	# print(tabulate(tabulated, headers=["Tables"], tablefmt='orgtbl'))
+	return tabulate(tabulated, headers=["Tables"], tablefmt='orgtbl')
 
 def dropTables(list_tables, table_schema, database):
 	tables_to_delete = InterpreterListener.tables
@@ -552,99 +578,84 @@ def dropTables(list_tables, table_schema, database):
 			os.remove("database_files/"+table_name+".csv")
 	saveDatabase(database, list_tables, table_schema)
 	print("Query OK")
+	return "Query executed successfully. Table is dropped."
 
 
 def insertDataIntoTable(db_table, query_values):
 	db_table.update( {query_values[0] : query_values[1:]} )
-	print('> Insert succesful.');
+	print('> Insert succesful.')
+	return "Insert succesful."
 
 
-def main(argv):
-	database = {}
-	list_tables = []
-	table_schema = {}
-	list_vartype = ["float", "varchar", "date"]
-	#list_tables = ["sample", "sample2", "person"]
-	#index 0 is always the primary key
-	# table_schema = {"sample":[["a", "b", "c"],[("number", None), ("string", 50), ("string", 50)]],
-	# 				"sample2":[["d", "e", "f"],[("number", None), ("string", 50), ("string", 50)]],
-	# 				"person":[["id", "name", "birthdate"],[("number", None), ("string", 50), ("date", None)]]}
+class MainPage:
+	def __init__(self, master):		
+		self.master = master				
 
-	loadTables(list_tables, table_schema)
-	# print(list_tables)
-	# print(table_schema)
+	def sendMessage(self, msg):
+	# def main():		
+		database = {}
+		list_tables = []
+		table_schema = {}
+		list_vartype = ["float", "varchar", "date"]	
+		output = ''
+		
+		loadTables(list_tables, table_schema)
+		# print(list_tables)
+		# print(table_schema)
 
-	for table in list_tables:
-		loadDatabase(database, table)
-	while True:
-		# input_stream = FileStream(argv[1])
-		input_stream = InputStream(input("mysql> "))
+		for table in list_tables:
+			loadDatabase(database, table)
+		# while True:
+			# input_stream = FileStream(argv[1])
+		# input_stream = InputStream(input("mysql> "))
+		input_stream = InputStream(msg)
 
 		try:
-
 			lexer = MySQLLexer(input_stream)
-
 			stream = CommonTokenStream(lexer)
-
 			parser = MySQLParser(stream)
-
 			parser.addErrorListener(SQLErrorListener())
-
 			tree = parser.s()
-
 			interpreter = InterpreterListener()
-
 			walker = ParseTreeWalker()
-
 			walker.walk(interpreter, tree)
 
-			
-
-
 			try:
-
 				if interpreter.command=="exit":
-
-					break
+					# break
+					pass
 
 				elif interpreter.command=="select":
-
 					checkTables(list_tables)
-
 					checkColumns(table_schema)
-
 					checkConditions(table_schema)
-
-					printData(database, table_schema)
-
+					output = printData(database, table_schema)
 
 				elif interpreter.command=="describe":
-
 					checkTables(list_tables)
-
-					describeTable(InterpreterListener.tables[0], table_schema)
-
+					output = describeTable(InterpreterListener.tables[0], table_schema)
 
 				elif interpreter.command=='insert':
 					checkTables(list_tables)
 					checkColumns(table_schema)
 					table_name, query_values = checkInsertData(table_schema, database)
-					insertDataIntoTable(database[table_name], query_values)
+					output = insertDataIntoTable(database[table_name], query_values)
 
 				elif interpreter.command=="create":
 					checkExistingTable(list_tables)
 					checkDuplicateColumns(InterpreterListener.duplicate_column)
-					# checkDataType(InterpreterListener.attributes.items(), list_vartype)
-					createTable(database, list_tables)
+					output = createTable(database, list_tables)
 					loadTables(list_tables, table_schema)
 					for table in list_tables:
 						loadDatabase(database, table)
 
 				elif interpreter.command=="show":
-					showTables(list_tables)
+					output = showTables(list_tables)					
 
 				elif interpreter.command=="drop":
-					dropTables(list_tables, table_schema, database)
+					output = dropTables(list_tables, table_schema, database)
+				
+				app.displayOutput(output)
 				
 			except SQLError as e:
 				print(e.message)
@@ -652,15 +663,10 @@ def main(argv):
 
 			finally:
 				# print("Command:", InterpreterListener.command)
-
 				# print("Columns:", InterpreterListener.columns)
-
 				# print("Tables:", InterpreterListener.tables)
-
 				# print("Conditions:", InterpreterListener.conditions)
-
 				# print("Logicals:", InterpreterListener.logicals)
-
 				# print("Attributes:", InterpreterListener.attributes)
 				InterpreterListener.resetVariables()
 
@@ -669,9 +675,17 @@ def main(argv):
 			print(e)
 
 			print()
-	# save database here
-	saveDatabase(database, list_tables, table_schema)
+		# save database here
+		saveDatabase(database, list_tables, table_schema)	
+	# def sendMessage(self, msg):
+	# 	print(msg)
 
 
-if __name__ == '__main__':
-	main(sys.argv)
+if __name__ == '__main__':	
+	app = None
+	controller = MainPage
+	# main()	
+	root = Tk()	
+	root.wm_title("CMSC227 - Advance Database")
+	app = MainGUI(root, controller)
+	root.mainloop()
