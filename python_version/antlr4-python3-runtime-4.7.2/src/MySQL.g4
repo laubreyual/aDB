@@ -8,7 +8,7 @@ delete_c : DELETE (WS)+ FROM (WS)+ table (WS)* (where_c)? (WS)* ';' ;
 
 insert_c : INSERT (WS)+ table ((WS)* PL column PR)? (WS)+ VALUES (WS)* PL values_c PR ';' (WS)* ;
 
-create_c : CREATE (WS)+ table (WS)* PL (WS)* attributes (WS)* PR (WS)*';' ;
+create_c : CREATE (WS)+ table (WS)* PL (WS)* attributes (WS)* (fkey_cons)? PR (WS)*';' ;
 
 SHOW : [Ss][Hh][Oo][Ww] (WS)* [Tt][Aa][Bb][Ll][Ee][Ss] ;
 
@@ -76,6 +76,8 @@ OR : [Oo][Rr];
 
 RELATIONAL : '=' | '>' | '<' | '>=' | '<=' | '!=' | BETWEEN | LIKE | IN ;
 
+REFERENCES : [Rr][Ee][Ff][Ee][Rr][Ee][Nn][Cc][Ee][Ss];
+
 IDENTIFIER : [a-zA-Z_]+[a-zA-Z_0-9]* ;
 
 logical : AND | OR ;
@@ -107,3 +109,10 @@ ATTRIBUTE : IDENTIFIER (WS)+ VARTYPE ((WS)+ OPTIONS (WS)*)* ;
 attributes : (WS)* ATTRIBUTE ((WS)* COMMA (WS)* ATTRIBUTE)* ;
 
 describe_c : DESCRIBE (WS)+ IDENTIFIER (WS)* ';' ;
+
+FOREIGN_KEY : [Ff][Oo][Rr][Ee][Ii][Gg][Nn] (WS)+ [Kk][Ee][Yy] ;
+
+fkey_cons : COMMA (WS)* FOREIGN_KEY (WS)* PL (WS)* IDENTIFIER (WS)* PR (WS)+ REFERENCES (WS)+ IDENTIFIER (WS)* PL (WS)* IDENTIFIER (WS)* PR;
+
+
+

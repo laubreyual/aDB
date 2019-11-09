@@ -11,6 +11,7 @@ from SQLError import *
 import copy
 import datetime
 import os
+import traceback
 
 row_count = 0
 
@@ -29,6 +30,8 @@ class InterpreterListener(MySQLListener):
 	attributes = {}
 	insert_values = []
 	insert_dtypes = []
+	foreign_key = ''
+	references = ''
 
 	def enterS(self, ctx:MySQLParser.SContext):
 		InterpreterListener.command = "select"
@@ -108,6 +111,9 @@ class InterpreterListener(MySQLListener):
 				data_type = 'varchar'
 			InterpreterListener.insert_values.append(val)
 			InterpreterListener.insert_dtypes.append(data_type)
+	def exitFkey_cons(self, ctx:MySQLParser.Fkey_consContext):
+		InterpreterListener.foreign_key = str(ctx.IDENTIFIER(0))
+		InterpreterListener.references = (str(ctx.IDENTIFIER(1)), str(ctx.IDENTIFIER(2)))
 	def resetVariables():
 		InterpreterListener.command = None
 		InterpreterListener.columns = []
@@ -117,6 +123,8 @@ class InterpreterListener(MySQLListener):
 		InterpreterListener.insert_values = []
 		InterpreterListener.insert_dtypes = []
 		InterpreterListener.attributes = {}
+		InterpreterListener.foreign_key = ''
+		InterpreterListener.references = ()
 
 def evaluateCondition(op1, op2, operator):
 	
@@ -505,6 +513,39 @@ def checkInsertData(table_schema, database):
 
 	return table_name, query_values
 
+
+def checkForeignKey(table_schema, db_tables):
+	own_table = InterpreterListener.tables[0]
+	ref_table = InterpreterListener.references[0]
+	ref_prkey = InterpreterListener.references[1]
+	foreign_key = InterpreterListener.foreign_key
+
+	if foreign_key not in list(InterpreterListener.attributes.keys()):
+		raise ColumnNotFoundError(foreign_key, own_table)
+
+	if ref_table not in db_tables:
+		raise TableNotFoundError(ref_table)
+
+	if table_schema[ref_table][0][0] != ref_prkey:
+		raise IncorrectPrimaryKeyError(ref_prkey, ref_table)
+
+	ref_dtype = table_schema[ref_table][1][0]
+	own_dtype = InterpreterListener.attributes[foreign_key]
+
+	if own_dtype.startswith('varchar'):
+		own_dtype = own_dtype.replace(')', '').split('(')
+		own_dtype = (own_dtype[0], int(own_dtype[1]))
+
+	elif own_dtype.startswith('float'):
+		own_dtype = own_dtype.replace(')', '').split('(')
+		restrictions = own_dtype[1].split(',')
+		own_dtype = (own_dtype[0], (int(restrictions[0]), int(restrictions[1])))
+
+	if own_dtype != ref_dtype:
+		raise DataTypeNotMatchError(foreign_key, own_dtype, ref_prkey, ref_dtype)
+
+	return foreign_key, (ref_table, ref_prkey)
+
 def describeTable(table, table_schema):
 	header = ["Field", "Type", "Key"]
 	columns = table_schema[table][0]
@@ -623,6 +664,11 @@ def main(argv):
 
 				elif interpreter.command=="create":
 					checkExistingTable(list_tables)
+					foreign_key, references = checkForeignKey(table_schema, list_tables)
+
+					print(foreign_key, references)
+
+					break
 					# checkDataType(InterpreterListener.attributes.items(), list_vartype)
 					createTable(database, list_tables)
 					loadTables(list_tables, table_schema)
@@ -655,6 +701,7 @@ def main(argv):
 
 				print()
 		except Exception as e:
+			traceback.print_exc()
 			print(e)
 
 			print()

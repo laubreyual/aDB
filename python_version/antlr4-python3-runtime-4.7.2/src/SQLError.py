@@ -30,6 +30,11 @@ class PrimaryKeyAlreadyExistsError(SQLError):
 		self.message = '"{}" is already a primary key in TABLE "{}".'.format(value, table)
 		super().__init__(self.message)
 
+class IncorrectPrimaryKeyError(SQLError):
+	def __init__(self, value, table):
+		self.message = '"{}" is not the primary key in TABLE "{}".'.format(value, table)
+		super().__init__(self.message)
+
 class TableFoundError(SQLError):
 	def __init__(self, table):
 		self.message = 'TABLE "{}" already exists.'.format(table)

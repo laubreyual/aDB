@@ -179,3 +179,12 @@ class MySQLListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MySQLParser#fkey_cons.
+    def enterFkey_cons(self, ctx:MySQLParser.Fkey_consContext):
+        pass
+
+    # Exit a parse tree produced by MySQLParser#fkey_cons.
+    def exitFkey_cons(self, ctx:MySQLParser.Fkey_consContext):
+        pass
+
+
