@@ -338,7 +338,7 @@ def createTable(database, list_tables):
 	header.append("COMMAND EXECUTED SUCCESSFULLY")
 	toPrint.append(["CREATED TABLE "+table_name])
 	if not pk_set:
-		print("NO PRIMARY KEY (PK) SET. FIRST COLUMN WILL BE SET AS THE PK.")
+		toPrint.append(["NO PRIMARY KEY (PK) SET. FIRST COLUMN WILL BE SET AS THE PK."])
 
 	return tabulate(toPrint, headers=header, tablefmt='orgtbl')
 
