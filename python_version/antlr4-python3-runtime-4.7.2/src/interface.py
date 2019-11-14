@@ -48,7 +48,7 @@ window.config(menu=menubar)
 
 # Text Fields
 input_text_field = tk.Text(master=window, height=10, width=30)
-input_text_field.grid(column=0,row=0).pack(fill=tk.BOTH)
+# input_text_field.grid(column=0,row=0).pack(fill=tk.BOTH)
 
 # Button
 button1 = tk.Button(text="Execute SQL", command=input_sql_command)

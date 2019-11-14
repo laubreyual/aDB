@@ -292,7 +292,7 @@ def printData(database, table_schema):
 	tabulated = []
 	printDataRecursive(database, column_headers, tabulated, [], table_column, conditions, logicals, not len(columns)>0, isIncluded)
 	if len(tabulated)>0:
-		return tabulate(tabulated, headers=column_headers, tablefmt='orgtbl')
+		return tabulate(tabulated, headers=column_headers, tablefmt='fancy_grid')
 		global row_count
 		print("Row Count:", len(tabulated))
 	else:
@@ -340,7 +340,7 @@ def createTable(database, list_tables):
 	if not pk_set:
 		toPrint.append(["NO PRIMARY KEY (PK) SET. FIRST COLUMN WILL BE SET AS THE PK."])
 
-	return tabulate(toPrint, headers=header, tablefmt='orgtbl')
+	return tabulate(toPrint, headers=header, tablefmt='fancy_grid')
 
 def checkTables(db_tables):
 	for table in InterpreterListener.tables:
@@ -555,14 +555,14 @@ def describeTable(table, table_schema):
 		else:
 			data_type = types[i][0]
 		toPrint.append([columns[i], data_type, key])
-	return tabulate(toPrint, headers=header, tablefmt='orgtbl')
+	return tabulate(toPrint, headers=header, tablefmt='fancy_grid')
 
 def showTables(list_tables):
 	tabulated = []
 	for table in list_tables:
 		tabulated.append([table])
-	# print(tabulate(tabulated, headers=["Tables"], tablefmt='orgtbl'))
-	return tabulate(tabulated, headers=["Tables"], tablefmt='orgtbl')
+	# print(tabulate(tabulated, headers=["Tables"], tablefmt='fancy_grid'))
+	return tabulate(tabulated, headers=["Tables"], tablefmt='fancy_grid')
 
 def dropTables(list_tables, table_schema, database):
 	tables_to_delete = InterpreterListener.tables
@@ -608,7 +608,7 @@ class MainPage:
 		# while True:
 			# input_stream = FileStream(argv[1])
 		# input_stream = InputStream(input("mysql> "))
-		input_stream = InputStream(msg)
+		input_stream = InputStream(msg)		
 
 		try:
 			lexer = MySQLLexer(input_stream)
