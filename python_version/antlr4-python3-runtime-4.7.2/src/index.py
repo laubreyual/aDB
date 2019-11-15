@@ -465,6 +465,59 @@ def checkValidDate(date):
 
 	return date
 
+def checkDeleteData(table_schema, database):
+	table_count = len(InterpreterListener.tables)
+	if table_count > 1:
+		raise SQLException('Too many tables for DELETE')
+	# print("Command:", InterpreterListener.command)
+	# print("Columns:", InterpreterListener.columns)
+	# print("Tables:", InterpreterListener.tables)
+	# print("Conditions:", InterpreterListener.conditions)
+	# print("Logicals:", InterpreterListener.logicals)
+	# print("Attributes:", InterpreterListener.attributes)
+
+	# Checking for foreign key constraint here
+
+def deleteFromTable(database, table_schema):
+	table_name = InterpreterListener.tables[0]
+	conditions = InterpreterListener.conditions
+	logicals = InterpreterListener.logicals
+	counter = 0
+	if len(logicals) == 0:
+		logicals.append('AND')
+
+	table = database[table_name]
+
+	for index in range(0, len(conditions)):
+		temp = conditions[index][0].split(".")
+		table_name = temp[0]
+		column_index = table_schema[table_name][0].index((temp[1]))
+		conditions[index] = [table_name, column_index]+ conditions[index][1:]
+	
+	print(conditions)
+	for key in list(table.keys()):
+		if logicals[0] == 'AND':
+			toDelete = True
+		else:
+			toDelete = False
+
+		for c in conditions:
+			op2 = c[3]
+			if c[1] == 0:
+				op1 = key
+			else:
+				op1 = table[key][c[1]-1]
+
+			if logicals[0] == 'AND':
+				toDelete = toDelete and evaluateCondition(op1, op2, c[2])
+			else:
+				toDelete = toDelete or evaluateCondition(op1, op2, c[2])
+
+		if toDelete:
+			table.pop(key)
+			counter+=1
+	return(str(counter)+" row(s) deleted")
+
 def checkInsertData(table_schema, database):
 	table_count = len(InterpreterListener.tables)
 	if table_count > 1:
@@ -654,6 +707,13 @@ class MainPage:
 
 				elif interpreter.command=="drop":
 					output = dropTables(list_tables, table_schema, database)
+
+				elif interpreter.command=="delete":
+					checkTables(list_tables)
+					checkColumns(table_schema)
+					checkConditions(table_schema)
+					checkDeleteData(table_schema, database)
+					output = deleteFromTable(database, table_schema)
 				
 				app.displayOutput(output)
 				
