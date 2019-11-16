@@ -21,15 +21,14 @@ class GenerateRecord:
 		file_path.touch(exist_ok=True)
 		file = open(file_path)
 		try:
-			with open(file_name, mode='a+', newline='') as write_csv_file:
+			with open(file_name, mode='w', newline='') as write_csv_file:
 				writer = csv.writer(write_csv_file, delimiter=',', lineterminator='\r\n', quotechar = "'")
 				writer.writerow(table_name)
-				writer.writerow(col_name)
+				writer.writerow(primary_col)
 
 				while row_count <= max_record:
-					row = []				
-					# while col_count < len(col_name):
-					for key, val in col_name.items():
+					row = []					
+					for key, val in primary_col.items():					
 						if key == primary_key:
 							if val == 'varchar':	
 								row.append('"'+key+str(row_count)+'"')
@@ -42,14 +41,15 @@ class GenerateRecord:
 								row.append('"'+key+str(row_count)+'"')
 							elif val == 'float':
 								row.append(str(random.randint(1,50000)))
-							elif val == 'date':	
+							elif val == 'date':								
 								year = str(random.randint(1700,2019))
 								month = str(random.randint(1,12))
 								day = str(random.randint(1,31))
-								gen_date = "{:02}:{:02}:{:02} {}".format(year, month, day)
+								gen_date = year+"-"+month+"-"+day							
 								row.append(str(gen_date))	
 
-					row_count += 1							
+					row_count += 1						
 					writer.writerow(row) # STORE CSV DATA TO TEXT FILE
+				file.close()
 		except:
 			pass
