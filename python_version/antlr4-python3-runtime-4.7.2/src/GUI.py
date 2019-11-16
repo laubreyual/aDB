@@ -1,4 +1,5 @@
 import tkinter as tk
+import re
 from tkinter import *
 from tkinter import simpledialog
 from tkinter import filedialog
@@ -45,16 +46,16 @@ class MainGUI:
 		# START: TOP PANE
 		# ================================
 		self.topPane = PanedWindow(self.frame, orient=HORIZONTAL)
-		self.topPane.grid(row=0, sticky="nsew", pady=10)
+		self.topPane.grid(row=0, sticky="nsew")
 
-		self.inputQueryEntry = Text(self.topPane, height=10, width=50)
-		self.inputQueryEntry.grid(row=1, column=0, sticky="nsew")		
+		self.inputQueryEntry = Text(self.topPane, height=10, width=50)		
+		self.inputQueryEntry.pack(fill="x", padx=20, pady=(10,0))	
 	
-		self.executeButton = Button(self.topPane, text="EXECUTE", command=self.executeQuery)
-		self.executeButton.grid(row=1, column=1, sticky="nsew")
+		self.executeButton = Button(self.topPane, text="EXECUTE", height=2, width=20, bg="#6699ff", activebackground="#00ff99", command=self.executeQuery)		
+		self.executeButton.pack(side=LEFT, padx=(20,5), pady=(10,10))
 
-		self.clearButton = Button(self.topPane, text="CLEAR", command=self.clearQuery)
-		self.clearButton.grid(row=1, column=2, sticky="nsew")
+		self.clearButton = Button(self.topPane, text="CLEAR",  height=2, width=20, bg="#ffff66", activebackground="#00ff99", command=self.clearQuery)		
+		self.clearButton.pack(side=LEFT, padx=(5,0), pady=(10,10))
 		# ================================
 		# END: TOP PANE
 		# ================================
@@ -62,18 +63,25 @@ class MainGUI:
 		# ================================
 		# START: BOTTOM PANE
 		# ================================
-		self.botPane = PanedWindow(self.frame, orient=HORIZONTAL)
-		self.botPane.grid(row=1, sticky="new", pady=10)
+		self.botPane = PanedWindow(self.frame, orient=HORIZONTAL, bg=self.mainColor)
+		self.botPane.grid(row=1, sticky="nsew", pady=(10, 10), padx=15)
 
-		self.outputText = Text(self.botPane, height=20)
-		self.outputText.grid(row = 0, column = 0, sticky="nsew")
+		self.outputLabel = Label(self.botPane, text="OUTPUT WINDOW", font='Arial 12 bold', bg=self.mainColor, fg="#ffffff")
+		self.outputLabel.grid(row=0, column=0, sticky="nsw", pady=(0,2))
 
-		self.scrollbar = Scrollbar(self.botPane, command=self.outputText.yview)
+		self.outputText = Text(self.botPane, height=17, width=93, wrap=NONE)
+		self.outputText.grid(row = 1, column=0, sticky="nsew")	
+
+		self.scrollbar = Scrollbar(self.botPane, command=self.outputText.yview, orient=VERTICAL)
 		self.outputText["yscrollcommand"] = self.scrollbar.set
-		self.scrollbar.grid(row = 0, column = 1, sticky="nsew")
+		self.scrollbar.grid(row = 1, column = 1, sticky="nsew")		
+		
+		self.scrollbarx = Scrollbar(self.botPane, command=self.outputText.xview, orient=HORIZONTAL)
+		self.outputText["xscrollcommand"] = self.scrollbarx.set
+		self.scrollbarx.grid(row = 2, column = 0, sticky="nsew")			
 
-		self.clearButton1 = Button(self.botPane, text="CLEAR", command=self.clearResult)
-		self.clearButton1.grid(row=0, column=2, sticky="nsew")
+		self.clearButton1 = Button(self.botPane, text="CLEAR", height=1, width=15, bg="#ffff66", activebackground="#00ff99", command=self.clearResult)
+		self.clearButton1.grid(row=3, column=0, pady=(10,0))		
 		# ================================
 		# END: BOTTOM PANE
 		# ================================
@@ -89,8 +97,11 @@ class MainGUI:
 	# FUNC: SEND THE QUERY TO CONTROLLER 
 	# ================================
 	def executeQuery(self):
-		self.query1 = self.inputQueryEntry.get("1.0", "end-1c")
-		self.controller.sendMessage(self, self.query1)
+		self.query1 = self.inputQueryEntry.get("1.0", "end-1c")		
+		if len(self.query1) > 0:
+			self.controller.sendMessage(self, self.query1)
+		else:
+			self.messagebox.showinfo('EXECUTE QUERY', "Nothing to execute.")
 
 	# ================================
 	# FUNC: CLEAR TEXT 
@@ -108,7 +119,7 @@ class MainGUI:
 	# ================================
 	def displayOutput(self, output):
 		self.outputText.config(state=NORMAL)
-		self.headerTag = '----------------------------------'
+		self.headerTag = '--------------------------------------------------'
 		self.outputHeader = self.headerTag + '\n QUERY: ' + self.query1 + '\n' + self.headerTag + '\n'
 		self.outputText.insert("1.0", self.outputHeader + output + '\n\n\n')
 		self.outputText.config(state=DISABLED)
@@ -165,7 +176,7 @@ class MainGUI:
 		
 
 class MyDialog(simpledialog.Dialog):
-
+	
 	def body(self, master):
 		self.frame = Frame(master, width=400, height=200)
 		self.frame.pack(fill="both", expand=True)
@@ -179,6 +190,8 @@ class MyDialog(simpledialog.Dialog):
 
 		self.columnLabel = Label(self.frame, text="COLUMN NAME:", anchor="w")
 		self.columnLabel.pack(fill="both")
+		self.columnLabel1 = Label(self.frame, text="FORMAT [col:type] OR [col1:type,col1:type] for multiple columns", anchor="w")
+		self.columnLabel1.pack(fill="both")
 		self.columnEntry = Entry(self.frame, width=70)
 		self.columnEntry.pack(fill="x", pady=(2,15))
 		self.columnEntry.insert(0,"id:float,fname:varchar,lname:varchar,age:float")
@@ -195,7 +208,7 @@ class MyDialog(simpledialog.Dialog):
 		self.countEntry.pack(fill="x", pady=(2,15))		
 		self.countEntry.insert(0,"10")	
 
-	def apply(self):
+	def apply(self):			
 		
 		self.table = self.tableEntry.get()
 		self.column = self.columnEntry.get()
@@ -217,14 +230,19 @@ class MyDialog(simpledialog.Dialog):
 		self.result = [self.table], [self.column], [self.primary_key], [self.count]
 
 	def formatColumn(self, column):
+		self.messagebox = messagebox
+		
 		col_type = {}
 		valid_type = ["float", "varchar", "date"]
-		for val in column.split(','):
-			key = val.split(':')
-			key_type = key[1].lower()
-			if key_type not in valid_type:
-				return False
-			else:
-				col_type[key[0].strip()] = key_type.strip()
+		try:
+			for val in column.split(','):
+				key = val.split(':')
+				key_type = key[1].lower()
+				if key_type not in valid_type:
+					return False
+				else:
+					col_type[key[0].strip()] = key_type.strip()
 
-		return col_type
+			return col_type
+		except:
+			self.messagebox.showerror('GENERATING CSV FILE...', "INVALID COLUMNS FORMAT")

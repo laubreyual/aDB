@@ -14,42 +14,42 @@ class GenerateRecord:
 		table_name = [table]	
 		primary_col = {}	
 		primary_col[primary_key] = col_name.pop(primary_key, None)
-		primary_col.update(col_name)
-		print(col_name)
-		print(primary_col)
+		primary_col.update(col_name)		
 
 		file_name = IMPORT_FILE_LOC+table_name[0]+".csv"
 		file_path = Path(file_name)		
 		file_path.touch(exist_ok=True)
 		file = open(file_path)
+		try:
+			with open(file_name, mode='a+', newline='') as write_csv_file:
+				writer = csv.writer(write_csv_file, delimiter=',', lineterminator='\r\n', quotechar = "'")
+				writer.writerow(table_name)
+				writer.writerow(col_name)
 
-		with open(file_name, mode='a+', newline='') as write_csv_file:
-			writer = csv.writer(write_csv_file, delimiter=',', lineterminator='\r\n', quotechar = "'")
-			writer.writerow(table_name)
-			writer.writerow(col_name)
+				while row_count <= max_record:
+					row = []				
+					# while col_count < len(col_name):
+					for key, val in col_name.items():
+						if key == primary_key:
+							if val == 'varchar':	
+								row.append('"'+key+str(row_count)+'"')
+							elif val == 'float':
+								row.append(str(row_count))
+							# elif val == 'date':
+							# 	row.append(str(str(random.randint(1700,2019)))+"-"+str(str(random.randint(1,12)))+"-"+str(str(random.randint(1,31))))
+						else:						
+							if val == 'varchar':						
+								row.append('"'+key+str(row_count)+'"')
+							elif val == 'float':
+								row.append(str(random.randint(1,50000)))
+							elif val == 'date':	
+								year = str(random.randint(1700,2019))
+								month = str(random.randint(1,12))
+								day = str(random.randint(1,31))
+								gen_date = "{:02}:{:02}:{:02} {}".format(year, month, day)
+								row.append(str(gen_date))	
 
-			while row_count <= max_record:
-				row = []				
-				# while col_count < len(col_name):
-				for key, val in col_name.items():
-					if key == primary_key:
-						if val == 'varchar':	
-							row.append('"'+key+str(row_count)+'"')
-						elif val == 'float':
-							row.append(str(row_count))
-						# elif val == 'date':
-						# 	row.append(str(str(random.randint(1700,2019)))+"-"+str(str(random.randint(1,12)))+"-"+str(str(random.randint(1,31))))
-					else:						
-						if val == 'varchar':						
-							row.append('"'+key+str(row_count)+'"')
-						elif val == 'float':
-							row.append(str(random.randint(1,50000)))
-						elif val == 'date':	
-							year = str(random.randint(1700,2019))
-							month = str(random.randint(1,12))
-							day = str(random.randint(1,31))
-							gen_date = "{:02}:{:02}:{:02} {}".format(year, month, day)
-							row.append(str(gen_date))	
-
-				row_count += 1							
-				writer.writerow(row) # STORE CSV DATA TO TEXT FILE
+					row_count += 1							
+					writer.writerow(row) # STORE CSV DATA TO TEXT FILE
+		except:
+			pass

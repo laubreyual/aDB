@@ -21,7 +21,9 @@ row_count = 0
 class SQLErrorListener(ErrorListener):
 	def __init__(self):
 		super(SQLErrorListener, self).__init__()
-	def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
+	def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):			
+		output = msg
+		app.displayOutput(output)
 		raise SQLError("Syntax error")
 
 class InterpreterListener(MySQLListener):
@@ -719,6 +721,8 @@ class MainPage:
 				
 			except SQLError as e:
 				print(e.message)
+				output = e.message
+				app.displayOutput(output)
 				print()
 
 			finally:
@@ -748,4 +752,5 @@ if __name__ == '__main__':
 	root = Tk()	
 	root.wm_title("CMSC227 - Advance Database")
 	app = MainGUI(root, controller)
+	root.resizable(False, False)
 	root.mainloop()
