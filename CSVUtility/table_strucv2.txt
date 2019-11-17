@@ -1,0 +1,10 @@
+sample;a;float;9,4;b;varchar;50;c;varchar;50
+sample2;d;float;9,4;e;varchar;50;f;varchar;50
+person;id;float;9,4;name;varchar;50;birthdate;date;None
+sample3;id;float;9,4;fname;varchar;100
+bday;kaarawan;date;None;pangalan;varchar;30;edad;float;3,0
+tbl;kaarawan;date;None;pangalan;varchar;30;edad;float;3,0
+test;id;float;9,0;a;varchar;30;v;varchar;30
+t3;a;date;None
+t1;a;date;None
+sample5;id;float;3,0;fname;varchar;50;bday;date;None

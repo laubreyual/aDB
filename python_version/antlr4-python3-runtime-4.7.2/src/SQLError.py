@@ -76,3 +76,8 @@ class InvalidFloatError(SQLError):
 			self.message = self.message + ' value must be between -65000 and 65000.'
 
 		super().__init__(self.message)
+
+class DuplicateColumnError(SQLError):
+	def __init__(self, column):
+		self.message = 'COLUMN "{}" has been declared more than once.'.format(column)
+		super().__init__(self.message)
