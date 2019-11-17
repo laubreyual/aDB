@@ -302,9 +302,8 @@ def printData(database, table_schema):
 	tabulated = []
 	printDataRecursive(database, column_headers, tabulated, [], table_column, conditions, logicals, not len(columns)>0, isIncluded)
 	if len(tabulated)>0:
-		return tabulate(tabulated, headers=column_headers, tablefmt='fancy_grid')
-		global row_count
 		print("Row Count:", len(tabulated))
+		return tabulate(tabulated, headers=column_headers, tablefmt='fancy_grid')
 	else:
 		print("Row Count: 0")
 		return "Row Count: 0"
@@ -788,13 +787,15 @@ class MainPage:
 
 				elif interpreter.command=="create":
 					checkExistingTable(list_tables)
-					foreign_key, references = checkForeignKey(table_schema, list_tables)
+					if(len(InterpreterListener.references)>0):
+						foreign_key, references = checkForeignKey(table_schema, list_tables)
 
 					# checkDataType(InterpreterListener.attributes.items(), list_vartype)
 					createTable(database, list_tables)
 					checkDuplicateColumns(InterpreterListener.duplicate_column)
 					output = createTable(database, list_tables)
-					updateForeignKey(fkey_ins, fkey_del)
+					if(len(InterpreterListener.references)>0):
+						updateForeignKey(fkey_ins, fkey_del)
 					loadTables(list_tables, table_schema)
 					for table in list_tables:
 						loadDatabase(database, table)
