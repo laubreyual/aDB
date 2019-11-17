@@ -71,6 +71,7 @@ class MainGUI:
 
 		self.outputText = Text(self.botPane, height=17, width=93, wrap=NONE)
 		self.outputText.grid(row = 1, column=0, sticky="nsew")	
+		self.outputText.config(state=DISABLED)
 
 		self.scrollbar = Scrollbar(self.botPane, command=self.outputText.yview, orient=VERTICAL)
 		self.outputText["yscrollcommand"] = self.scrollbar.set
@@ -125,7 +126,7 @@ class MainGUI:
 		self.outputText.config(state=DISABLED)
 			
 	def importFileDialog(self):
-		filename =  filedialog.askopenfilename(initialdir = IMPORT_FILE_LOC, title = "SELECT FILE TO IMPORT",filetypes = (("CSV FILE","*.csv"),("ALL FILES","*.*")))
+		filename =  filedialog.askopenfilename(parent=self.master, initialdir = IMPORT_FILE_LOC, title = "SELECT FILE TO IMPORT",filetypes = (("CSV FILE","*.csv"),("ALL FILES","*.*")))
 				
 		if filename == "":
 			pass

@@ -762,8 +762,8 @@ class MainPage:
 					checkDeleteData(table_schema, database)
 					output = deleteFromTable(database, table_schema)
 				
-				
-				
+				app.displayOutput(output)
+								
 			except SQLError as e:
 				print(e.message)
 				output = e.message
@@ -778,12 +778,12 @@ class MainPage:
 				# print("Logicals:", InterpreterListener.logicals)
 				# print("Attributes:", InterpreterListener.attributes)
 				InterpreterListener.resetVariables()
-				app.displayOutput(output)
+				# app.displayOutput(output)
 				print()
 		except Exception as e:
 			traceback.print_exc()
 			print(e)
-			app.displayOutput(str(e))
+			# app.displayOutput(str(e))
 			print()
 		# save database here
 		saveDatabase(database, list_tables, table_schema)	
