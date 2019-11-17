@@ -87,3 +87,8 @@ class ForeignKeyValueError(SQLError):
 	def __init__(self, value, table):
 		self.message = 'FOREIGN KEY with VALUE "{}" does not exist on TABLE "{}"'.format(value, table)
 		super().__init__(self.message)
+
+class DeleteForeignKeyError(SQLError):
+	def __init__(self, key):
+		self.message = 'Row with PRIMARY key "{}" cannot be deleted because of a FOREIGN KEY CONSTRAINT'.format(key)
+		super().__init__(self.message)

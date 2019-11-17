@@ -11,20 +11,13 @@ from SQLError import *
 import copy
 import datetime
 import os
-import re
-import traceback
-
-from tkinter import Tk
-from GUI import MainGUI
 
 row_count = 0
 
 class SQLErrorListener(ErrorListener):
 	def __init__(self):
 		super(SQLErrorListener, self).__init__()
-	def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):			
-		output = msg
-		app.displayOutput(output)
+	def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
 		raise SQLError("Syntax error")
 
 class InterpreterListener(MySQLListener):
@@ -36,10 +29,6 @@ class InterpreterListener(MySQLListener):
 	attributes = {}
 	insert_values = []
 	insert_dtypes = []
-	foreign_key = ''
-	references = ''
-	duplicate_column = {}
-	is_pk_set = False
 
 	def enterS(self, ctx:MySQLParser.SContext):
 		InterpreterListener.command = "select"
@@ -99,31 +88,13 @@ class InterpreterListener(MySQLListener):
 		elif ctx.OR() != None:
 			InterpreterListener.logicals.append("OR")
 	def exitAttributes(self, ctx:MySQLParser.AttributesContext):
-		i = 0	
-		primary_key = {}
-		while True:	
-			if re.search('PRIMARY_KEY', str(ctx.ATTRIBUTE(i)), re.IGNORECASE):
-			# if "PRIMARY_KEY" in str(ctx.ATTRIBUTE(i)):
-				pk_array = str(ctx.ATTRIBUTE(i)).split(" ")
-				pk_key = pk_array[0]
-				pk_val = pk_array[1]
-				primary_key[pk_key] = pk_val
-			
-			if len(primary_key) > 0:
-				InterpreterListener.is_pk_set = True
-								
-			col_array = str(ctx.ATTRIBUTE(i)).split(" ")
-			key = col_array[0]
-			value = col_array[1]
-			if key in InterpreterListener.attributes:
-				InterpreterListener.duplicate_column[key] = False
-				break		
-			InterpreterListener.attributes[key] = value
+		i = 0		
+		while True:
+			(key, value) = str(ctx.ATTRIBUTE(i)).split(" ")	
 			i+=1
+			InterpreterListener.attributes[key] = value
 			if ctx.ATTRIBUTE(i) == None:
 				break
-		primary_key.update(InterpreterListener.attributes)
-		InterpreterListener.attributes = primary_key		
 	def exitValues_c(self, ctx:MySQLParser.Values_cContext):
 		for i in range(len(ctx.value())):
 			if ctx.value(i).NUMBER():
@@ -137,9 +108,6 @@ class InterpreterListener(MySQLListener):
 				data_type = 'varchar'
 			InterpreterListener.insert_values.append(val)
 			InterpreterListener.insert_dtypes.append(data_type)
-	def exitFkey_cons(self, ctx:MySQLParser.Fkey_consContext):
-		InterpreterListener.foreign_key = str(ctx.IDENTIFIER(0))
-		InterpreterListener.references = (str(ctx.IDENTIFIER(1)), str(ctx.IDENTIFIER(2)))
 	def resetVariables():
 		InterpreterListener.command = None
 		InterpreterListener.columns = []
@@ -149,9 +117,6 @@ class InterpreterListener(MySQLListener):
 		InterpreterListener.insert_values = []
 		InterpreterListener.insert_dtypes = []
 		InterpreterListener.attributes = {}
-		InterpreterListener.foreign_key = ''
-		InterpreterListener.references = ()
-		InterpreterListener.duplicate_column = {}
 
 def evaluateCondition(op1, op2, operator):
 	
@@ -194,7 +159,7 @@ def pushCondition(database, table_schema, tables, conditions):
 		else:
 			newDatabase[table] = temp
 
-	return newDatabase
+	return database
 
 def printDataRecursive(database, headers, tabulated, l, table_column, conditions, logicals, isPrintAll, isIncluded):
 	#print("Table column", table_column)
@@ -302,19 +267,17 @@ def printData(database, table_schema):
 	tabulated = []
 	printDataRecursive(database, column_headers, tabulated, [], table_column, conditions, logicals, not len(columns)>0, isIncluded)
 	if len(tabulated)>0:
-		return tabulate(tabulated, headers=column_headers, tablefmt='fancy_grid')
+		print(tabulate(tabulated, headers=column_headers, tablefmt='orgtbl'))
 		global row_count
 		print("Row Count:", len(tabulated))
 	else:
 		print("Row Count: 0")
-		return "Row Count: 0"
 		
 def createTable(database, list_tables):
 	toPrint = []
 	header = []
 	tables = InterpreterListener.tables
 	attributes = InterpreterListener.attributes
-	pk_set = InterpreterListener.is_pk_set
 	table_name = str(tables[0])
 	table_schema = table_name+";"
 	i = 0	
@@ -347,10 +310,7 @@ def createTable(database, list_tables):
 
 	header.append("COMMAND EXECUTED SUCCESSFULLY")
 	toPrint.append(["CREATED TABLE "+table_name])
-	if not pk_set:
-		toPrint.append(["NO PRIMARY KEY (PK) SET. FIRST COLUMN WILL BE SET AS THE PK."])
-
-	return tabulate(toPrint, headers=header, tablefmt='fancy_grid')
+	print(tabulate(toPrint, headers=header, tablefmt='orgtbl'))
 
 def checkTables(db_tables):
 	for table in InterpreterListener.tables:
@@ -361,11 +321,6 @@ def checkExistingTable(db_tables):
 	for table in InterpreterListener.tables:
 		if table in db_tables:
 			raise TableFoundError(table)
-
-def checkDuplicateColumns(duplicate_col):
-	for key, value in duplicate_col.items():
-		if value != None and value == False:
-			raise DuplicateColumnError(key)
 
 # def checkDataType(datatypes, list_vartype):
 # 	for key, value in datatypes:
@@ -488,11 +443,11 @@ def checkDeleteData(table_schema, database):
 
 	# Checking for foreign key constraint here
 
-def deleteFromTable(database, table_schema, fkey_del):
+def deleteFromTable(database, table_schema):
 	table_name = InterpreterListener.tables[0]
 	conditions = InterpreterListener.conditions
 	logicals = InterpreterListener.logicals
-	counter = 0
+
 	if len(logicals) == 0:
 		logicals.append('AND')
 
@@ -504,6 +459,7 @@ def deleteFromTable(database, table_schema, fkey_del):
 		column_index = table_schema[table_name][0].index((temp[1]))
 		conditions[index] = [table_name, column_index]+ conditions[index][1:]
 	
+	print(conditions)
 	for key in list(table.keys()):
 		if logicals[0] == 'AND':
 			toDelete = True
@@ -523,24 +479,9 @@ def deleteFromTable(database, table_schema, fkey_del):
 				toDelete = toDelete or evaluateCondition(op1, op2, c[2])
 
 		if toDelete:
-			can_be_deleted = checkDeleteFkey(key, table_name, database, fkey_del, table_schema)
-			if can_be_deleted:
-				table.pop(key)
-				counter+=1
-			else:
-				raise DeleteForeignKeyError(key)
-	return(str(counter)+" row(s) deleted")
+			table.pop(key)
 
-def checkDeleteFkey(to_remove_key, table_name, database, fkey_del, table_schema):
-	
-	for table_info in fkey_del[table_name]:
-		table_name = table_info[0]
-		col = table_info[1]
-		col_index = table_schema[table_name][0].index(col)-1
-		for key in database[table_name]:
-			if database[table_name][key][col_index] == to_remove_key:
-				return False
-	return True
+
 
 def checkInsertData(table_schema, database):
 	table_count = len(InterpreterListener.tables)
@@ -617,81 +558,28 @@ def checkInsertData(table_schema, database):
 
 	return table_name, query_values
 
-
-def checkForeignKey(table_schema, db_tables):
-	own_table = InterpreterListener.tables[0]
-	ref_table = InterpreterListener.references[0]
-	ref_prkey = InterpreterListener.references[1]
-	foreign_key = InterpreterListener.foreign_key
-
-	if foreign_key not in list(InterpreterListener.attributes.keys()):
-		raise ColumnNotFoundError(foreign_key, own_table)
-
-	if ref_table not in db_tables:
-		raise TableNotFoundError(ref_table)
-
-	if table_schema[ref_table][0][0] != ref_prkey:
-		raise IncorrectPrimaryKeyError(ref_prkey, ref_table)
-
-	ref_dtype = table_schema[ref_table][1][0]
-	own_dtype = InterpreterListener.attributes[foreign_key]
-
-	if own_dtype.startswith('varchar'):
-		own_dtype = own_dtype.replace(')', '').split('(')
-		own_dtype = (own_dtype[0], int(own_dtype[1]))
-
-	elif own_dtype.startswith('float'):
-		own_dtype = own_dtype.replace(')', '').split('(')
-		restrictions = own_dtype[1].split(',')
-		own_dtype = (own_dtype[0], (int(restrictions[0]), int(restrictions[1])))
-
-	if own_dtype != ref_dtype:
-		raise DataTypeNotMatchError(foreign_key, own_dtype, ref_prkey, ref_dtype)
-
-	return foreign_key, (ref_table, ref_prkey)
-
-def checkInsertFkey(database, fkey_ins, table_name, query_values, table_schema):
-	if fkey_ins[table_name]:
-		foreign_key = fkey_ins[table_name][0]
-		ref_table = fkey_ins[table_name][1]
-		pos = table_schema[0].index(foreign_key)
-		value = query_values[pos]
-
-		try:
-			database[ref_table][value]
-		except KeyError:
-			raise ForeignKeyValueError(value, ref_table);
-
-def describeTable(table, table_schema, fkey_ins):
+def describeTable(table, table_schema):
 	header = ["Field", "Type", "Key"]
 	columns = table_schema[table][0]
 	types = table_schema[table][1]
 	toPrint = []
 
-	if table in fkey_ins:
-		fk_col = table_schema[table][0].index(fkey_ins[table][0])
-	else:
-		fk_col = -1
-
 	for i in range(0, len(columns)):
 		key = ''
 		if i == 0:
 			key = 'PRI'
-		elif i == fk_col:
-			key = 'FK REF({})'.format(fkey_ins[table][1])
 		if types[i][0] != "date":
 			data_type = '{}({})'.format(types[i][0], str(types[i][1]).replace('(','').replace(')',''))
 		else:
 			data_type = types[i][0]
 		toPrint.append([columns[i], data_type, key])
-	return tabulate(toPrint, headers=header, tablefmt='fancy_grid')
+	print(tabulate(toPrint, headers=header, tablefmt='orgtbl'))
 
 def showTables(list_tables):
 	tabulated = []
 	for table in list_tables:
 		tabulated.append([table])
-	# print(tabulate(tabulated, headers=["Tables"], tablefmt='fancy_grid'))
-	return tabulate(tabulated, headers=["Tables"], tablefmt='fancy_grid')
+	print(tabulate(tabulated, headers=["Tables"], tablefmt='orgtbl'))
 
 def dropTables(list_tables, table_schema, database):
 	tables_to_delete = InterpreterListener.tables
@@ -707,143 +595,132 @@ def dropTables(list_tables, table_schema, database):
 			os.remove("database_files/"+table_name+".csv")
 	saveDatabase(database, list_tables, table_schema)
 	print("Query OK")
-	return "Query executed successfully. Table is dropped."
 
 
 def insertDataIntoTable(db_table, query_values):
 	db_table.update( {query_values[0] : query_values[1:]} )
-	print('> Insert succesful.')
-	return "Insert succesful."
-
-def updateForeignKey(fkey_ins, fkey_del):
-	own_table = InterpreterListener.tables[0]
-	ref_table = InterpreterListener.references[0]
-	ref_prkey = InterpreterListener.references[1]
-	foreign_key = InterpreterListener.foreign_key
-
-	fkey_ins[own_table] = (foreign_key, ref_table)
+	print('> Insert succesful.');
 
 
-class MainPage:
-	def __init__(self, master):		
-		self.master = master				
+def main(argv):
+	database = {}
+	list_tables = []
+	table_schema = {}
+	list_vartype = ["float", "varchar", "date"]
+	#list_tables = ["sample", "sample2", "person"]
+	#index 0 is always the primary key
+	# table_schema = {"sample":[["a", "b", "c"],[("number", None), ("string", 50), ("string", 50)]],
+	# 				"sample2":[["d", "e", "f"],[("number", None), ("string", 50), ("string", 50)]],
+	# 				"person":[["id", "name", "birthdate"],[("number", None), ("string", 50), ("date", None)]]}
 
-	def sendMessage(self, msg):
-	# def main():		
-		database = {}
-		list_tables = []
-		table_schema = {}
-		list_vartype = ["float", "varchar", "date"]	
-		output = ''
-		fkey_ins = {}
-		fkey_del = {}
-		
-		loadForeignKey(fkey_ins, fkey_del)
-		loadTables(list_tables, table_schema)
-		# print(list_tables)
-		# print(table_schema)
+	loadTables(list_tables, table_schema)
+	# print(list_tables)
+	# print(table_schema)
 
-		for table in list_tables:
-			loadDatabase(database, table)
-		# while True:
-			# input_stream = FileStream(argv[1])
-		# input_stream = InputStream(input("mysql> "))
-		input_stream = InputStream(msg)		
+	for table in list_tables:
+		loadDatabase(database, table)
+	while True:
+		# input_stream = FileStream(argv[1])
+		input_stream = InputStream(input("mysql> "))
 
 		try:
+
 			lexer = MySQLLexer(input_stream)
+
 			stream = CommonTokenStream(lexer)
+
 			parser = MySQLParser(stream)
+
 			parser.addErrorListener(SQLErrorListener())
+
 			tree = parser.s()
+
 			interpreter = InterpreterListener()
+
 			walker = ParseTreeWalker()
+
 			walker.walk(interpreter, tree)
 
+			
+
+
 			try:
+
 				if interpreter.command=="exit":
-					# break
-					pass
+
+					break
 
 				elif interpreter.command=="select":
+
 					checkTables(list_tables)
+
 					checkColumns(table_schema)
+
 					checkConditions(table_schema)
-					output = printData(database, table_schema)
+
+					printData(database, table_schema)
+
 
 				elif interpreter.command=="describe":
+
 					checkTables(list_tables)
-					output = describeTable(InterpreterListener.tables[0], table_schema, fkey_ins)
+
+					describeTable(InterpreterListener.tables[0], table_schema)
+
 
 				elif interpreter.command=='insert':
 					checkTables(list_tables)
 					checkColumns(table_schema)
 					table_name, query_values = checkInsertData(table_schema, database)
-					checkInsertFkey(database, fkey_ins, table_name, query_values, table_schema[table_name])
-					output = insertDataIntoTable(database[table_name], query_values)
+					insertDataIntoTable(database[table_name], query_values)
 
 				elif interpreter.command=="create":
 					checkExistingTable(list_tables)
-					foreign_key, references = checkForeignKey(table_schema, list_tables)
-
 					# checkDataType(InterpreterListener.attributes.items(), list_vartype)
 					createTable(database, list_tables)
-					checkDuplicateColumns(InterpreterListener.duplicate_column)
-					output = createTable(database, list_tables)
-					updateForeignKey(fkey_ins, fkey_del)
 					loadTables(list_tables, table_schema)
 					for table in list_tables:
 						loadDatabase(database, table)
 
 				elif interpreter.command=="show":
-					output = showTables(list_tables)					
+					showTables(list_tables)
 
 				elif interpreter.command=="drop":
-					output = dropTables(list_tables, table_schema, database)
+					dropTables(list_tables, table_schema, database)
 
 				elif interpreter.command=="delete":
 					checkTables(list_tables)
 					checkColumns(table_schema)
 					checkConditions(table_schema)
 					checkDeleteData(table_schema, database)
-					output = deleteFromTable(database, table_schema, fkey_del)
+					deleteFromTable(database, table_schema)
 				
-				app.displayOutput(output)
-								
 			except SQLError as e:
 				print(e.message)
-				output = e.message
-				app.displayOutput(output)
 				print()
 
 			finally:
 				# print("Command:", InterpreterListener.command)
+
 				# print("Columns:", InterpreterListener.columns)
+
 				# print("Tables:", InterpreterListener.tables)
+
 				# print("Conditions:", InterpreterListener.conditions)
+
 				# print("Logicals:", InterpreterListener.logicals)
+
 				# print("Attributes:", InterpreterListener.attributes)
 				InterpreterListener.resetVariables()
-				# app.displayOutput(output)
+
 				print()
 		except Exception as e:
-			traceback.print_exc()
 			print(e)
-			# app.displayOutput(str(e))
+
 			print()
-		# save database here
-		saveDatabase(database, list_tables, table_schema)	
-		saveForeignKey(fkey_ins, fkey_del)
-	# def sendMessage(self, msg):
-	# 	print(msg)
+	# save database here
+	saveDatabase(database, list_tables, table_schema)
 
 
-if __name__ == '__main__':	
-	app = None
-	controller = MainPage
-	# main()	
-	root = Tk()	
-	root.wm_title("CMSC227 - Advance Database")
-	app = MainGUI(root, controller)
-	root.resizable(False, False)
-	root.mainloop()
+if __name__ == '__main__':
+	main(sys.argv)

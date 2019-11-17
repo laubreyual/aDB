@@ -65,6 +65,18 @@ def loadForeignKey(fkey_ins, fkey_del):
 
 	ins.close()
 
+	dele = open('database_files/fkey_del', 'r')
+
+	for line in dele:
+		if line != '\n':
+			data = line[:-1].split(':')
+			references = []
+			tables = data[1].split(',')
+			for i in range(0, len(tables), 2):
+				references.append((tables[i], tables[i+1]))
+			fkey_del[data[0]] = references
+	dele.close()
+
 def saveDatabase(database, list_tables, table_schema):
 	file = open("database_files/table_schema", "w")
 
@@ -114,3 +126,14 @@ def saveForeignKey(fkey_ins, fkey_del):
 		ins.write('{}:{},{}\n'.format(table, data[0], data[1]))
 	
 	ins.close()
+
+	dele = open('database_files/fkey_del', 'w')
+
+	for table in fkey_del:
+		data = fkey_del[table]
+		dele.write('{}:'.format(table))
+		dele.write('{},{}'.format(data[0][0], data[0][1]))
+		for i in range(1, len(data)):
+			dele.write(',{},{}'.format(data[i][0], data[i][1]))
+		dele.write("\n")
+	dele.close()
