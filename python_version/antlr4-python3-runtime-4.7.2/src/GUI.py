@@ -48,7 +48,7 @@ class MainGUI:
 		self.topPane = PanedWindow(self.frame, orient=HORIZONTAL)
 		self.topPane.grid(row=0, sticky="nsew")
 
-		self.inputQueryEntry = Text(self.topPane, height=10, width=50)		
+		self.inputQueryEntry = Text(self.topPane, height=10, width=50, wrap=WORD)		
 		self.inputQueryEntry.pack(fill="x", padx=20, pady=(10,0))	
 	
 		self.executeButton = Button(self.topPane, text="EXECUTE", height=2, width=20, bg="#6699ff", activebackground="#00ff99", command=self.executeQuery)		
