@@ -696,9 +696,26 @@ def showTables(list_tables):
 	# print(tabulate(tabulated, headers=["Tables"], tablefmt='fancy_grid'))
 	return tabulate(tabulated, headers=["Tables"], tablefmt='fancy_grid')
 
-def dropTables(list_tables, table_schema, database):
+def dropTables(list_tables, table_schema, database, fkey_del, fkey_ins):
 	tables_to_delete = InterpreterListener.tables
 	checkTables(list_tables)
+
+	for table_name in tables_to_delete:
+		if table_name in fkey_del:
+			raise DropTableForeignKeyError(table_name)
+
+	for table_name in tables_to_delete:
+		if table_name in fkey_ins:
+			fkey_ins.pop(table_name)
+			for t in fkey_del:
+				to_remove = []
+				for item in fkey_del[t]:
+					if item[0] == table_name:
+						to_remove.append(item)
+				for item in to_remove:
+					fkey_del[t].remove(item)
+
+
 	for table_name in tables_to_delete:
 		if table_name in list_tables:
 			list_tables.remove(table_name)
@@ -804,7 +821,7 @@ class MainPage:
 					output = showTables(list_tables)					
 
 				elif interpreter.command=="drop":
-					output = dropTables(list_tables, table_schema, database)
+					output = dropTables(list_tables, table_schema, database, fkey_del, fkey_ins)
 
 				elif interpreter.command=="delete":
 					checkTables(list_tables)
