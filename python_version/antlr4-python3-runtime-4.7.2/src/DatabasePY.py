@@ -50,6 +50,21 @@ def loadTables(list_tables, table_schema):
 		table_schema[data[0]] = [columns, data_types]
 	file.close()
 
+def loadForeignKey(fkey_ins, fkey_del):
+	ins = open('database_files/fkey_ins', 'r')
+
+	for line in ins:
+		if line != '\n':
+			data = line.split(':')
+			table = data[0]
+			references = data[1].split(',')
+			foreign_key = references[0]
+			ref_table = references[1][:-1]
+
+			fkey_ins[table] = (foreign_key, ref_table)
+
+	ins.close()
+
 def saveDatabase(database, list_tables, table_schema):
 	file = open("database_files/table_schema", "w")
 
@@ -91,4 +106,11 @@ def saveTableToSchema(table_schema, new_table):
 
 	file = open("database_files/"+new_table+".csv","w")
 
+def saveForeignKey(fkey_ins, fkey_del):
+	ins = open('database_files/fkey_ins', 'w')
 
+	for table in fkey_ins:
+		data = fkey_ins[table]
+		ins.write('{}:{},{}\n'.format(table, data[0], data[1]))
+	
+	ins.close()

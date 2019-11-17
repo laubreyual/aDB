@@ -7,3 +7,4 @@ tbl;kaarawan;date;None;pangalan;varchar;30;edad;float;3,0
 test;id;float;9,0;a;varchar;30;v;varchar;30
 t3;a;date;None
 t1;a;date;None
+samp;title;varchar;30;points;float;9,4

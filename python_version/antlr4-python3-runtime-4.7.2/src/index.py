@@ -12,6 +12,7 @@ import copy
 import datetime
 import os
 import re
+import traceback
 
 from tkinter import Tk
 from GUI import MainGUI
@@ -635,6 +636,18 @@ def checkForeignKey(table_schema, db_tables):
 
 	return foreign_key, (ref_table, ref_prkey)
 
+def checkInsertFkey(database, fkey_ins, table_name, query_values, table_schema):
+	if fkey_ins[table_name]:
+		foreign_key = fkey_ins[table_name][0]
+		ref_table = fkey_ins[table_name][1]
+		pos = table_schema[0].index(foreign_key)
+		value = query_values[pos]
+
+		try:
+			database[ref_table][value]
+		except KeyError:
+			raise ForeignKeyValueError(value, ref_table);
+
 def describeTable(table, table_schema):
 	header = ["Field", "Type", "Key"]
 	columns = table_schema[table][0]
@@ -681,6 +694,14 @@ def insertDataIntoTable(db_table, query_values):
 	print('> Insert succesful.')
 	return "Insert succesful."
 
+def updateForeignKey(fkey_ins, fkey_del):
+	own_table = InterpreterListener.tables[0]
+	ref_table = InterpreterListener.references[0]
+	ref_prkey = InterpreterListener.references[1]
+	foreign_key = InterpreterListener.foreign_key
+
+	fkey_ins[own_table] = (foreign_key, ref_table)
+
 
 class MainPage:
 	def __init__(self, master):		
@@ -693,7 +714,10 @@ class MainPage:
 		table_schema = {}
 		list_vartype = ["float", "varchar", "date"]	
 		output = ''
+		fkey_ins = {}
+		fkey_del = {}
 		
+		loadForeignKey(fkey_ins, fkey_del)
 		loadTables(list_tables, table_schema)
 		# print(list_tables)
 		# print(table_schema)
@@ -734,17 +758,18 @@ class MainPage:
 					checkTables(list_tables)
 					checkColumns(table_schema)
 					table_name, query_values = checkInsertData(table_schema, database)
+					checkInsertFkey(database, fkey_ins, table_name, query_values, table_schema[table_name])
 					output = insertDataIntoTable(database[table_name], query_values)
 
 				elif interpreter.command=="create":
 					checkExistingTable(list_tables)
 					foreign_key, references = checkForeignKey(table_schema, list_tables)
-					print(foreign_key, references)
 
 					# checkDataType(InterpreterListener.attributes.items(), list_vartype)
 					createTable(database, list_tables)
 					checkDuplicateColumns(InterpreterListener.duplicate_column)
 					output = createTable(database, list_tables)
+					updateForeignKey(fkey_ins, fkey_del)
 					loadTables(list_tables, table_schema)
 					for table in list_tables:
 						loadDatabase(database, table)
@@ -787,6 +812,7 @@ class MainPage:
 			print()
 		# save database here
 		saveDatabase(database, list_tables, table_schema)	
+		saveForeignKey(fkey_ins, fkey_del)
 	# def sendMessage(self, msg):
 	# 	print(msg)
 

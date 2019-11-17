@@ -81,3 +81,9 @@ class DuplicateColumnError(SQLError):
 	def __init__(self, column):
 		self.message = 'COLUMN "{}" has been declared more than once.'.format(column)
 		super().__init__(self.message)
+
+
+class ForeignKeyValueError(SQLError):
+	def __init__(self, value, table):
+		self.message = 'FOREIGN KEY with VALUE "{}" does not exist on TABLE "{}"'.format(value, table)
+		super().__init__(self.message)
