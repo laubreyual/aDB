@@ -90,5 +90,5 @@ class ForeignKeyValueError(SQLError):
 
 class DeleteForeignKeyError(SQLError):
 	def __init__(self, key):
-		self.message = 'Row with PRIMARY key "{}" cannot be deleted because of a FOREIGN KEY CONSTRAINT'.format(key)
+		self.message = 'Row with PRIMARY key "{}" cannot be deleted because of a FOREIGN KEY CONSTRAINT, 0 rows affected'.format(key)
 		super().__init__(self.message)

@@ -504,6 +504,7 @@ def deleteFromTable(database, table_schema, fkey_del):
 		column_index = table_schema[table_name][0].index((temp[1]))
 		conditions[index] = [table_name, column_index]+ conditions[index][1:]
 	
+	to_be_deleted = []
 	for key in list(table.keys()):
 		if logicals[0] == 'AND':
 			toDelete = True
@@ -525,10 +526,13 @@ def deleteFromTable(database, table_schema, fkey_del):
 		if toDelete:
 			can_be_deleted = checkDeleteFkey(key, table_name, database, fkey_del, table_schema)
 			if can_be_deleted:
-				table.pop(key)
+				to_be_deleted.append(key)
+				#table.pop(key)
 				counter+=1
 			else:
 				raise DeleteForeignKeyError(key)
+	for key in to_be_deleted:
+		table.pop(key)
 	return(str(counter)+" row(s) deleted")
 
 def checkDeleteFkey(to_remove_key, table_name, database, fkey_del, table_schema):
