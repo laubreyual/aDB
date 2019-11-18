@@ -21,7 +21,7 @@ class MainGUI:
 		# =========================
 		# START: MAIN FRAME
 		# =========================
-		self.frame = Frame(master, width=800, height=600, bg=self.mainColor)
+		self.frame = Frame(master, width=800, height=650, bg=self.mainColor)
 		self.frame.pack(fill="both", expand=True)
 		self.frame.grid_propagate(False)
 		self.frame.grid_rowconfigure(0, weight=1)
