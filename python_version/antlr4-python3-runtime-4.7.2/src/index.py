@@ -535,15 +535,17 @@ def deleteFromTable(database, table_schema, fkey_del):
 	return(str(counter)+" row(s) deleted")
 
 def checkDeleteFkey(to_remove_key, table_name, database, fkey_del, table_schema):
-	
-	for table_info in fkey_del[table_name]:
-		table_name = table_info[0]
-		col = table_info[1]
-		col_index = table_schema[table_name][0].index(col)-1
-		for key in database[table_name]:
-			if database[table_name][key][col_index] == to_remove_key:
-				return False
-	return True
+	try:
+		for table_info in fkey_del[table_name]:
+			table_name = table_info[0]
+			col = table_info[1]
+			col_index = table_schema[table_name][0].index(col)-1
+			for key in database[table_name]:
+				if database[table_name][key][col_index] == to_remove_key:
+					return False
+		return True
+	except KeyError:
+		return False
 
 def checkInsertData(table_schema, database):
 	table_count = len(InterpreterListener.tables)
@@ -654,16 +656,20 @@ def checkForeignKey(table_schema, db_tables):
 	return foreign_key, (ref_table, ref_prkey)
 
 def checkInsertFkey(database, fkey_ins, table_name, query_values, table_schema):
-	if fkey_ins[table_name]:
-		foreign_key = fkey_ins[table_name][0]
-		ref_table = fkey_ins[table_name][1]
-		pos = table_schema[0].index(foreign_key)
-		value = query_values[pos]
+	try:
+		fkey_ins[table_name]
+	except KeyError:
+		return
 
-		try:
-			database[ref_table][value]
-		except KeyError:
-			raise ForeignKeyValueError(value, ref_table);
+	foreign_key = fkey_ins[table_name][0]
+	ref_table = fkey_ins[table_name][1]
+	pos = table_schema[0].index(foreign_key)
+	value = query_values[pos]
+
+	try:
+		database[ref_table][value]
+	except KeyError:
+		raise ForeignKeyValueError(value, ref_table);
 
 def describeTable(table, table_schema, fkey_ins):
 	header = ["Field", "Type", "Key"]

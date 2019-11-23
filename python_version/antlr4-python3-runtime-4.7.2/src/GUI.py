@@ -21,7 +21,7 @@ class MainGUI:
 		# =========================
 		# START: MAIN FRAME
 		# =========================
-		self.frame = Frame(master, width=800, height=600, bg=self.mainColor)
+		self.frame = Frame(master, width=800, height=550, bg=self.mainColor)
 		self.frame.pack(fill="both", expand=True)
 		self.frame.grid_propagate(False)
 		self.frame.grid_rowconfigure(0, weight=1)
@@ -69,7 +69,7 @@ class MainGUI:
 		self.outputLabel = Label(self.botPane, text="OUTPUT WINDOW", font='Arial 12 bold', bg=self.mainColor, fg="#ffffff")
 		self.outputLabel.grid(row=0, column=0, sticky="nsw", pady=(0,2))
 
-		self.outputText = Text(self.botPane, height=17, width=93, wrap=NONE)
+		self.outputText = Text(self.botPane, height=17, width=125, wrap=NONE)
 		self.outputText.grid(row = 1, column=0, sticky="nsew")	
 		self.outputText.config(state=DISABLED)
 

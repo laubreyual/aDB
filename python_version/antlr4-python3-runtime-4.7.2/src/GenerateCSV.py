@@ -43,8 +43,8 @@ class GenerateRecord:
 								row.append(str(random.randint(1,50000)))
 							elif val == 'date':								
 								year = str(random.randint(1700,2019))
-								month = str(random.randint(1,12))
-								day = str(random.randint(1,31))
+								month = str(random.randint(1,12)).zfill(2)
+								day = str(random.randint(1,31)).zfill(2)
 								gen_date = year+"-"+month+"-"+day							
 								row.append(str(gen_date))	
 
