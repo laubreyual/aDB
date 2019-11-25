@@ -5,6 +5,7 @@ from io import StringIO
 from typing.io import TextIO
 import sys
 
+
 def serializedATN():
     with StringIO() as buf:
         buf.write("\3\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964\3)")
@@ -332,6 +333,7 @@ class MySQLParser ( Parser ):
 
 
 
+
     class SContext(ParserRuleContext):
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -442,6 +444,7 @@ class MySQLParser ( Parser ):
         finally:
             self.exitRule()
         return localctx
+
 
     class Select_cContext(ParserRuleContext):
 
@@ -579,6 +582,7 @@ class MySQLParser ( Parser ):
             self.exitRule()
         return localctx
 
+
     class Delete_cContext(ParserRuleContext):
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -694,6 +698,7 @@ class MySQLParser ( Parser ):
         finally:
             self.exitRule()
         return localctx
+
 
     class Insert_cContext(ParserRuleContext):
 
@@ -846,6 +851,7 @@ class MySQLParser ( Parser ):
             self.exitRule()
         return localctx
 
+
     class Create_cContext(ParserRuleContext):
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -981,6 +987,7 @@ class MySQLParser ( Parser ):
             self.exitRule()
         return localctx
 
+
     class Show_cContext(ParserRuleContext):
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -1038,6 +1045,7 @@ class MySQLParser ( Parser ):
         finally:
             self.exitRule()
         return localctx
+
 
     class Drop_cContext(ParserRuleContext):
 
@@ -1113,6 +1121,7 @@ class MySQLParser ( Parser ):
             self.exitRule()
         return localctx
 
+
     class Exit_cContext(ParserRuleContext):
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -1153,6 +1162,7 @@ class MySQLParser ( Parser ):
         finally:
             self.exitRule()
         return localctx
+
 
     class LogicalContext(ParserRuleContext):
 
@@ -1201,6 +1211,7 @@ class MySQLParser ( Parser ):
         finally:
             self.exitRule()
         return localctx
+
 
     class ColumnContext(ParserRuleContext):
 
@@ -1314,6 +1325,7 @@ class MySQLParser ( Parser ):
             self.exitRule()
         return localctx
 
+
     class Column_nameContext(ParserRuleContext):
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -1364,6 +1376,7 @@ class MySQLParser ( Parser ):
         finally:
             self.exitRule()
         return localctx
+
 
     class TableContext(ParserRuleContext):
 
@@ -1453,6 +1466,7 @@ class MySQLParser ( Parser ):
             self.exitRule()
         return localctx
 
+
     class Where_cContext(ParserRuleContext):
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -1516,6 +1530,7 @@ class MySQLParser ( Parser ):
         finally:
             self.exitRule()
         return localctx
+
 
     class S_conditionContext(ParserRuleContext):
 
@@ -1618,6 +1633,7 @@ class MySQLParser ( Parser ):
             self.exitRule()
         return localctx
 
+
     class ConditionContext(ParserRuleContext):
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -1712,6 +1728,7 @@ class MySQLParser ( Parser ):
             self.exitRule()
         return localctx
 
+
     class ValueContext(ParserRuleContext):
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -1762,6 +1779,7 @@ class MySQLParser ( Parser ):
         finally:
             self.exitRule()
         return localctx
+
 
     class Values_cContext(ParserRuleContext):
 
@@ -1861,6 +1879,7 @@ class MySQLParser ( Parser ):
             self.exitRule()
         return localctx
 
+
     class AttributesContext(ParserRuleContext):
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -1959,6 +1978,7 @@ class MySQLParser ( Parser ):
             self.exitRule()
         return localctx
 
+
     class Describe_cContext(ParserRuleContext):
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -2033,6 +2053,7 @@ class MySQLParser ( Parser ):
         finally:
             self.exitRule()
         return localctx
+
 
     class Fkey_consContext(ParserRuleContext):
 
