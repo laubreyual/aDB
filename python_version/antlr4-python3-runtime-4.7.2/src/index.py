@@ -459,7 +459,7 @@ def checkValidVarchar(varchar, column_name, length):
 
 def checkValidFloat(number, column_name, restriction):
 	# TODO: check valid float, number of digits, precisions
-	if number > 65000 or number < -65000:
+	if number > 63000 or number < -63000:
 		raise InvalidFloatError(number, restriction, 'limit')
 
 	return number
