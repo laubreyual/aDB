@@ -1,3 +1,8 @@
+# =========================================
+# PLEASE INSTALL THE FF DEPENDENCIES 
+# BEFORE RUNNING THE PROGRAM
+# =========================================
+
 # Dependencies:
 oobtree
 tabulate

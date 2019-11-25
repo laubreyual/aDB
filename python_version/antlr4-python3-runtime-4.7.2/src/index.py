@@ -873,5 +873,5 @@ if __name__ == '__main__':
 	root = Tk()	
 	root.wm_title("CMSC227 - Advance Database")
 	app = MainGUI(root, controller)
-	root.resizable(False, False)
+	# root.resizable(False, False)
 	root.mainloop()
