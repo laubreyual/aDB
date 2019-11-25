@@ -73,7 +73,7 @@ class InvalidFloatError(SQLError):
 		self.message = 'Invalid value for float FLOAT{}.'.format(restrictions)
 
 		if typeof == 'limit':
-			self.message = self.message + ' value must be between -65000 and 65000.'
+			self.message = self.message + ' value must be between -63000 and 63000.'
 
 		super().__init__(self.message)
 
