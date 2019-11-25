@@ -545,7 +545,7 @@ def checkDeleteFkey(to_remove_key, table_name, database, fkey_del, table_schema)
 					return False
 		return True
 	except KeyError:
-		return False
+		return True
 
 def checkInsertData(table_schema, database):
 	table_count = len(InterpreterListener.tables)
