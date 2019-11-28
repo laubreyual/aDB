@@ -33,14 +33,14 @@ class GenerateRecord:
 							if val == 'varchar':	
 								row.append('"'+key+str(row_count)+'"')
 							elif val == 'float':
-								row.append(str(row_count))
+								row.append(str(row_count)+".0")
 							# elif val == 'date':
 							# 	row.append(str(str(random.randint(1700,2019)))+"-"+str(str(random.randint(1,12)))+"-"+str(str(random.randint(1,31))))
 						else:						
 							if val == 'varchar':						
 								row.append('"'+key+str(row_count)+'"')
 							elif val == 'float':
-								row.append(str(random.randint(1,50000)))
+								row.append(str(random.randint(1,50000))+".0")
 							elif val == 'date':								
 								year = str(random.randint(1700,2019))
 								month = str(random.randint(1,12)).zfill(2)
